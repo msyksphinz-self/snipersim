@@ -82,34 +82,66 @@ namespace dl
     rv_freg_f29,                        /* FP temporaries Caller */
     rv_freg_f30,                        /* FP temporaries Caller */
     rv_freg_f31,                        /* FP temporaries Caller */
+    rv_vreg_v0,                         /* Vector registers */
+    rv_vreg_v1,                         /* Vector registers */
+    rv_vreg_v2,                         /* Vector registers */
+    rv_vreg_v3,                         /* Vector registers */
+    rv_vreg_v4,                         /* Vector registers */
+    rv_vreg_v5,                         /* Vector registers */
+    rv_vreg_v6,                         /* Vector registers */
+    rv_vreg_v7,                         /* Vector registers */
+    rv_vreg_v8,                         /* Vector registers */
+    rv_vreg_v9,                         /* Vector registers */
+    rv_vreg_v10,                        /* Vector registers */
+    rv_vreg_v11,                        /* Vector registers */
+    rv_vreg_v12,                        /* Vector registers */
+    rv_vreg_v13,                        /* Vector registers */
+    rv_vreg_v14,                        /* Vector registers */
+    rv_vreg_v15,                        /* Vector registers */
+    rv_vreg_v16,                        /* Vector registers */
+    rv_vreg_v17,                        /* Vector registers */
+    rv_vreg_v18,                        /* Vector registers */
+    rv_vreg_v19,                        /* Vector registers */
+    rv_vreg_v20,                        /* Vector registers */
+    rv_vreg_v21,                        /* Vector registers */
+    rv_vreg_v22,                        /* Vector registers */
+    rv_vreg_v23,                        /* Vector registers */
+    rv_vreg_v24,                        /* Vector registers */
+    rv_vreg_v25,                        /* Vector registers */
+    rv_vreg_v26,                        /* Vector registers */
+    rv_vreg_v27,                        /* Vector registers */
+    rv_vreg_v28,                        /* Vector registers */
+    rv_vreg_v29,                        /* Vector registers */
+    rv_vreg_v30,                        /* Vector registers */
+    rv_vreg_v31,                        /* Vector registers */
     last_reg
   };
-extern const char* reg_name_sym[];  
-  
+extern const char* reg_name_sym[];
+
 class RISCVDecoder : public Decoder
 {
-  public:    
+  public:
     RISCVDecoder(dl_arch arch, dl_mode mode, dl_syntax syntax);
-    int reg_set_size = 64;   
-    
+    int reg_set_size = 64;
+
     virtual ~RISCVDecoder();  // dtor
-    
+
     virtual void decode(DecodedInst * inst) override; // pure virtual method; implement in subclass
     virtual void decode(DecodedInst * inst, dl_isa isa) override;
-    
+
     /// Change the ISA mode to new_mode
-    virtual void change_isa_mode(dl_isa new_isa) override; 
-    
+    virtual void change_isa_mode(dl_isa new_isa) override;
+
     /// Get the instruction name from the numerical (enum) instruction Id
-    virtual const char* inst_name(unsigned int inst_id) override; 
+    virtual const char* inst_name(unsigned int inst_id) override;
     /// Get the register name from the numerical (enum) register Id
     virtual const char* reg_name(unsigned int reg_id) override;
-    
+
      /// Get the largest enclosing register; applies to x86 only; ARM just returns r; RISCV ?
     virtual decoder_reg largest_enclosing_register(decoder_reg r) override;
     /// Check if this register is invalid
     virtual bool invalid_register(decoder_reg r) override;
-   
+
     /// Check if this register holds the program counter
     virtual bool reg_is_program_counter(decoder_reg r) override;
 
@@ -122,9 +154,15 @@ class RISCVDecoder : public Decoder
 
     /// Get the base register of the memory operand pointed by mem_idx
     virtual decoder_reg mem_base_reg (const DecodedInst * inst, unsigned int mem_idx) override;
+
+    /// Check if the base register of the memory operand pointed by mem_idx is also updated
+    virtual bool mem_base_upate(const DecodedInst* inst, unsigned int mem_idx) override;
+    /// Check if the memory operand pointed by mem_idx has an index register
+    virtual bool has_index_reg (const DecodedInst * inst, unsigned int mem_idx) override;
+
     /// Get the index register of the memory operand pointed by mem_idx
     virtual decoder_reg mem_index_reg (const DecodedInst * inst, unsigned int mem_idx) override;
-    
+
     /// Check if the operand mem_idx from instruction inst is read from memory
     virtual bool op_read_mem (const DecodedInst * inst, unsigned int mem_idx) override;
     /// Check if the operand mem_idx from instruction inst is written to memory
@@ -133,20 +171,20 @@ class RISCVDecoder : public Decoder
     virtual bool op_read_reg (const DecodedInst * inst, unsigned int idx) override;
     /// Check if the operand idx from instruction inst writes a register
     virtual bool op_write_reg (const DecodedInst * inst, unsigned int idx) override;
-    
+
     /// Check if the operand idx from instruction inst is involved in an address generation operation
     /// (i.e. part of LEA instruction in x86)
     virtual bool is_addr_gen (const DecodedInst * inst, unsigned int idx) override;
     /// Check if the operand idx from instruction inst is a register
-    virtual bool op_is_reg (const DecodedInst * inst, unsigned int idx) override;    
-    
+    virtual bool op_is_reg (const DecodedInst * inst, unsigned int idx) override;
+
     /// Get the register used for operand idx from instruction inst.
     /// Function op_is_reg() should be called first.
     virtual decoder_reg get_op_reg (const DecodedInst * inst, unsigned int idx) override;
-    
+
     /// Get the size in bytes of the memory operand pointed by mem_idx
     virtual unsigned int size_mem_op (const DecodedInst * inst, unsigned int mem_idx) override;
-    /// Get the number of execution micro operations contained in instruction 'ins' 
+    /// Get the number of execution micro operations contained in instruction 'ins'
     virtual unsigned int get_exec_microops(const DecodedInst *ins, int numLoads, int numStores) override;
     /// Get the maximum size of the operands of instruction inst in bits
     virtual uint16_t get_operand_size(const DecodedInst *ins) override;
@@ -163,12 +201,24 @@ class RISCVDecoder : public Decoder
     /// Check if the opcode is an add/sub instruction that operates in vector and FP registers
     virtual bool is_fpvector_addsub_opcode(decoder_opcode opcd, const DecodedInst* ins) override;
     /// Check if the opcode is a mul/div instruction that operates in vector and FP registers
-    virtual bool is_fpvector_muldiv_opcode(decoder_opcode opcd, const DecodedInst* ins) override;    
+    virtual bool is_fpvector_muldiv_opcode(decoder_opcode opcd, const DecodedInst* ins) override;
     /// Check if the opcode is an instruction that loads or store data on vector and FP registers
     virtual bool is_fpvector_ldst_opcode(decoder_opcode opcd, const DecodedInst* ins) override;
-    
+
     /// Get the value of the last register in the enumeration
     virtual decoder_reg last_reg() override;
+
+    /// Get the input register mapped. Some registers can be mapped onto the lower bits of others.
+    virtual uint32_t map_register(decoder_reg reg) override { return reg; };
+    ///Get the number of implicit registers that are read by the instruction
+    virtual unsigned int num_read_implicit_registers(const DecodedInst *inst) override { return 0; };
+
+    ///Get the idx implicit source register
+    virtual decoder_reg get_read_implicit_reg(const DecodedInst* inst, unsigned int idx) override { return 0; };
+    ///Get the number of implicit registers that are written by the instruction
+    virtual unsigned int num_write_implicit_registers(const DecodedInst *inst) override { return 0; };
+    ///Get the idx implicit destiny register
+    virtual decoder_reg get_write_implicit_reg(const DecodedInst *inst, unsigned int idx) override { return 0; };
 
     // /// Get the target architecture of the decoder
     // dl_arch get_arch();
@@ -188,11 +238,12 @@ class RISCVDecodedInst : public DecodedInst
     riscv::inst_t * get_rv8_inst();
     riscv::decode * get_rv8_dec();
     void set_rv8_dec(riscv::decode d);
+    void set_disassembly();
 
     /// Get the instruction numerical Id
     virtual unsigned int inst_num_id() const override;
     /// Get an string with the disassembled instruction
-    virtual void disassembly_to_str(char *, int) const override;
+    virtual std::string disassembly_to_str() const;
     /// Check if this instruction is a NOP
     virtual bool is_nop() const override;
     /// Check if this instruction is atomic
@@ -216,16 +267,19 @@ class RISCVDecodedInst : public DecodedInst
     virtual bool is_mem_pair() const override;
 
     // virtual ~DecodedInst();  // dtor -- virtual to be able to destroy polymorphically
-    
+
     // const bool & get_already_decoded() const;
     // void set_already_decoded(const bool & b);
     // size_t & get_size();
     // const uint8_t * & get_code();
     // uint64_t & get_address();
 
+    virtual bool is_indirect_branch() const override;
+    virtual bool is_writeback() const override { return false; }
+
     private:
      riscv::decode rv8_dec;
-     riscv::inst_t rv8_instr;  
+     riscv::inst_t rv8_instr;
 };
 
 } // namespace dl;
