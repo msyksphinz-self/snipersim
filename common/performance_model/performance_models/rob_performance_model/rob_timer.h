@@ -43,6 +43,8 @@ private:
          SubsecondTime addressReadyMax;
          SubsecondTime issued;
          SubsecondTime done;
+
+         bool kanata_registered;  // Indicate Kanata Format Instruction Registered
    };
 
    const uint64_t dispatchWidth;
@@ -146,6 +148,11 @@ private:
    SubsecondTime doCommit(uint64_t& instructionsExecuted);
 
    void issueInstruction(uint64_t idx, SubsecondTime &next_event);
+
+   // Kanata Trace Format
+   bool m_enable_kanata;
+   SubsecondTime m_last_kanata_time;
+   FILE *m_kanata_fp;
 
 public:
 
