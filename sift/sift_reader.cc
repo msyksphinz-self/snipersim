@@ -39,7 +39,7 @@ Sift::Reader::Reader(const char *filename, const char *response_filename, uint32
    , handleEmuArg(NULL)
    , handleRoutineChangeFunc(NULL)
    , handleRoutineAnnounceFunc(NULL)
-   , handleRoutineArg(NULL)   
+   , handleRoutineArg(NULL)
    , filesize(0)
    , last_address(0)
    , icache()
@@ -460,9 +460,9 @@ bool Sift::Reader::Read(Instruction &inst)
                free(name);
                free(filename);
                break;
-            }            
+            }
             case RecOtherISAChange:
-            { 
+            {
                assert(rec.Other.size == sizeof(uint32_t));
                uint32_t new_isa;
                input->read(reinterpret_cast<char*>(&new_isa), sizeof(new_isa));
@@ -748,6 +748,9 @@ void Sift::Reader::sendSimpleResponse(RecOtherType type, void *data, uint32_t si
    #if VERBOSE > 0
    std::cerr << "[DEBUG:" << m_id << "] Write SimpleResponse type=" << type << std::endl;
    #endif
+
+   // Modify
+   return;
 
    if (!initResponse())
    {
