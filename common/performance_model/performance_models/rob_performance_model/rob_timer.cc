@@ -60,7 +60,7 @@ RobTimer::RobTimer(
       , perf(_perf)
       , m_cpiCurrentFrontEndStall(NULL)
       , m_mlp_histogram(Sim()->getCfg()->getBoolArray("perf_model/core/rob_timer/mlp_histogram", core->getId()))
-      , m_enable_kanata (false)
+      , m_enable_kanata (Sim()->getCfg()->getBoolArray("log/enable_kanata_log", m_core->getId()))
       , m_last_kanata_time(SubsecondTime::Zero())
 {
 
@@ -896,7 +896,7 @@ SubsecondTime RobTimer::doCommit(uint64_t& instructionsExecuted)
 
       Instruction *inst = entry->uop->getMicroOp()->getInstruction();
       if (inst->getDisassembly().find("add            zero, zero, ra") != std::string::npos) {
-         m_enable_kanata = Sim()->getCfg()->getBoolArray("log/enable_kanata_log", m_core->getId());
+         m_enable_kanata = true;
          std::cout << "KonataStart " << std::dec << SubsecondTime::divideRounded(now, now.getPeriod()) << " "
                    << std::hex << entry->uop->getMicroOp()->getInstruction()->getAddress() << " "
                    << entry->uop->getMicroOp()->getInstruction()->getDisassembly() << '\n';
