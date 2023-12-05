@@ -249,8 +249,8 @@ unsigned int RISCVDecoder::num_operands(const DecodedInst * inst)
   riscv::decode *dec = ((RISCVDecodedInst *)inst)->get_rv8_dec();
   const rv_operand_data *operand_data = rv_inst_operand_data[dec->op];
   while (operand_data->type == rv_type_ireg ||
-         operand_data->type == rv_type_freg ||
-         operand_data->type == rv_type_vreg) {
+         operand_data->type == rv_type_freg /* ||
+         operand_data->type == rv_type_vreg */) {
     num_operands++;
     operand_data++;
   }
@@ -321,10 +321,10 @@ bool RISCVDecoder::op_read_mem(const DecodedInst * inst, unsigned int mem_idx)
   if (format == rv_fmt_rd_offset_rs1  /* lb, lh, lw, lbu, lhu, lwu, ld, ldu, lq, c.lwsp, c.ld, c.ldsp, c.lq, c.lqsp */
     || format == rv_fmt_frd_offset_rs1 /* flw, fld, flq, c.fld, c.flw, c.fldsp, c.flwsp */ ) {
      res = true;
-  } else if (format == rv_fmt_vd_rs1 ||
-             format == rv_fmt_vd_rs1_rs2 ||
-             format == rv_fmt_vd_rs1_vs2) {
-    res = true;
+  // } else if (format == rv_fmt_vd_rs1 ||
+  //            format == rv_fmt_vd_rs1_rs2 ||
+  //            format == rv_fmt_vd_rs1_vs2) {
+  //   res = true;
   }
 
   return res;
@@ -340,10 +340,10 @@ bool RISCVDecoder::op_write_mem(const DecodedInst * inst, unsigned int mem_idx)
   if (format == rv_fmt_rs2_offset_rs1  /* sb, sh, sw, sd, sq, c.sw, c.swsp, c.sd, c.sdsp, c.sq, c.sqsp */
     || format == rv_fmt_frs2_offset_rs1  /* fsw, fsd, fsq, c.fsd, c.fsw, c.fsdsp, c.fswsp */ ) {
      res = true;
-  } else if (format == rv_fmt_vs3_rs1 ||
-             format == rv_fmt_vs3_rs1_rs2 ||
-             format == rv_fmt_vs3_rs1_vs2) {
-    res = true;
+  // } else if (format == rv_fmt_vs3_rs1 ||
+  //            format == rv_fmt_vs3_rs1_rs2 ||
+  //            format == rv_fmt_vs3_rs1_vs2) {
+  //   res = true;
   }
   return res;
 }
@@ -355,8 +355,8 @@ bool RISCVDecoder::op_read_reg (const DecodedInst * inst, unsigned int idx)
   riscv::decode *dec = ((RISCVDecodedInst *)inst)->get_rv8_dec();
   const rv_operand_data *operand_data = rv_inst_operand_data[dec->op];
   if (operand_data[idx].operand_name == rv_operand_name_rd ||
-      operand_data[idx].operand_name == rv_operand_name_frd ||
-      operand_data[idx].operand_name == rv_operand_name_vd) {
+      operand_data[idx].operand_name == rv_operand_name_frd /* ||
+      operand_data[idx].operand_name == rv_operand_name_vd */) {
     res = false;
   } else if (operand_data[idx].type == rv_type_ireg) {
     if ((operand_data[idx].operand_name == rv_operand_name_rs1 && dec->rs1 == rv_ireg_zero) ||
@@ -367,8 +367,8 @@ bool RISCVDecoder::op_read_reg (const DecodedInst * inst, unsigned int idx)
       // std::cout << "   NonZero Hit\n";
       res = true;
     }
-  } else if (operand_data[idx].type == rv_type_freg ||
-             operand_data[idx].type == rv_type_vreg) {  // what about compressed register?
+  } else if (operand_data[idx].type == rv_type_freg /* ||
+             operand_data[idx].type == rv_type_vreg */) {  // what about compressed register?
     res = true;
   }
   return res;
@@ -388,8 +388,8 @@ bool RISCVDecoder::op_write_reg (const DecodedInst * inst, unsigned int idx)
   //           << "dec->rs3 = " << static_cast<int>(dec->rs3) << "\n";
 
   if (operand_data[idx].operand_name != rv_operand_name_rd  &&
-      operand_data[idx].operand_name != rv_operand_name_frd &&
-      operand_data[idx].operand_name != rv_operand_name_vd) {
+      operand_data[idx].operand_name != rv_operand_name_frd /* &&
+      operand_data[idx].operand_name != rv_operand_name_vd */) {
     res = false;
   } else if (operand_data[idx].type == rv_type_ireg) {
     if (operand_data[idx].operand_name == rv_operand_name_rd && (dec->rd == rv_ireg_zero)) {
@@ -397,8 +397,8 @@ bool RISCVDecoder::op_write_reg (const DecodedInst * inst, unsigned int idx)
     } else {
       res = true;
     }
-  } else if (operand_data[idx].type == rv_type_freg ||
-             operand_data[idx].type == rv_type_vreg) {  // what about compressed register?
+  } else if (operand_data[idx].type == rv_type_freg /* ||
+             operand_data[idx].type == rv_type_vreg */) {  // what about compressed register?
     res = true;
   }
   return res;
@@ -419,8 +419,8 @@ bool RISCVDecoder::op_is_reg (const DecodedInst * inst, unsigned int idx)
   riscv::decode *dec = ((RISCVDecodedInst *)inst)->get_rv8_dec();
   const rv_operand_data *operand_data = rv_inst_operand_data[dec->op];
   if (operand_data[idx].type == rv_type_ireg ||
-      operand_data[idx].type == rv_type_freg ||
-      operand_data[idx].type == rv_type_vreg) {
+      operand_data[idx].type == rv_type_freg /* ||
+      operand_data[idx].type == rv_type_vreg */) {
     res = true;
   }
   return res;
@@ -434,8 +434,8 @@ Decoder::decoder_reg RISCVDecoder::get_op_reg (const DecodedInst * inst, unsigne
   riscv::decode *dec = ((RISCVDecodedInst *)inst)->get_rv8_dec();
   const rv_operand_data *operand_data = rv_inst_operand_data[dec->op];
   if (operand_data[idx].type == rv_type_ireg ||
-      operand_data[idx].type == rv_type_freg ||
-      operand_data[idx].type == rv_type_vreg) {
+      operand_data[idx].type == rv_type_freg /* ||
+      operand_data[idx].type == rv_type_vreg */) {
     switch (operand_data[idx].operand_name) {
       case rv_operand_name_rd:    reg = dec->rd;    break;
       case rv_operand_name_rs1:   reg = dec->rs1;   break;
@@ -444,10 +444,10 @@ Decoder::decoder_reg RISCVDecoder::get_op_reg (const DecodedInst * inst, unsigne
       case rv_operand_name_frs1:  reg = dec->rs1 + 32;   break;
       case rv_operand_name_frs2:  reg = dec->rs2 + 32;   break;
       case rv_operand_name_frs3:  reg = dec->rs3 + 32;   break;
-      case rv_operand_name_vd:    reg = dec->rd  + 64;   break;
-      case rv_operand_name_vs1:   reg = dec->rs1 + 64;   break;
-      case rv_operand_name_vs2:   reg = dec->rs2 + 64;   break;
-      case rv_operand_name_vs3:   reg = dec->rs3 + 64;   break;
+      // case rv_operand_name_vd:    reg = dec->rd  + 64;   break;
+      // case rv_operand_name_vs1:   reg = dec->rs1 + 64;   break;
+      // case rv_operand_name_vs2:   reg = dec->rs2 + 64;   break;
+      // case rv_operand_name_vs3:   reg = dec->rs3 + 64;   break;
       default: reg = 0;
     }
   }
@@ -492,86 +492,6 @@ unsigned int RISCVDecoder::size_mem_op (const DecodedInst * inst, unsigned int m
     case rv_op_sc_d: 		/* Store Conditional Double Word */
                         size = 8;
                         break;
-    case rv_op_vle8_v    :
-    case rv_op_vse8_v    :
-    case rv_op_vlse8_v   :
-    case rv_op_vsse8_v   :
-    case rv_op_vluxei8_v :
-    case rv_op_vloxei8_v :
-    case rv_op_vsuxei8_v :
-    case rv_op_vsoxei8_v :
-    case rv_op_vl1re8_v  :
-    case rv_op_vl2re8_v  :
-    case rv_op_vl4re8_v  :
-    case rv_op_vl8re8_v  :
-    case rv_op_vs1re8_v  :
-    case rv_op_vs2re8_v  :
-    case rv_op_vs4re8_v  :
-    case rv_op_vs8re8_v  :
-    case rv_op_vle8ff_v  :
-      size = 1;
-      break;
-    case rv_op_vle16_v    :
-    case rv_op_vse16_v    :
-    case rv_op_vlse16_v   :
-    case rv_op_vsse16_v   :
-    case rv_op_vluxei16_v :
-    case rv_op_vloxei16_v :
-    case rv_op_vsuxei16_v :
-    case rv_op_vsoxei16_v :
-    case rv_op_vl1re16_v  :
-    case rv_op_vl2re16_v  :
-    case rv_op_vl4re16_v  :
-    case rv_op_vl8re16_v  :
-    case rv_op_vs1re16_v  :
-    case rv_op_vs2re16_v  :
-    case rv_op_vs4re16_v  :
-    case rv_op_vs8re16_v  :
-    case rv_op_vle16ff_v  :
-      size = 2;
-      break;
-    case rv_op_vle32_v      :
-    case rv_op_vse32_v      :
-    case rv_op_vlse32_v     :
-    case rv_op_vsse32_v     :
-    case rv_op_vle32ff_v    :
-    case rv_op_vluxei32_v   :
-    case rv_op_vloxei32_v   :
-    case rv_op_vsuxei32_v   :
-    case rv_op_vsoxei32_v   :
-    case rv_op_vl1re32_v    :
-    case rv_op_vl2re32_v    :
-    case rv_op_vl4re32_v    :
-    case rv_op_vl8re32_v    :
-    case rv_op_vs1re32_v    :
-    case rv_op_vs2re32_v    :
-    case rv_op_vs4re32_v    :
-    case rv_op_vs8re32_v    :
-    case rv_op_vlseg4e32_v  :
-    case rv_op_vlseg8e32_v  :
-    case rv_op_vsseg4e32_v  :
-    case rv_op_vsseg8e32_v  :
-      size = 4;
-      break;
-    case rv_op_vle64_v    :
-    case rv_op_vse64_v    :
-    case rv_op_vlse64_v   :
-    case rv_op_vsse64_v   :
-    case rv_op_vluxei64_v :
-    case rv_op_vloxei64_v :
-    case rv_op_vsuxei64_v :
-    case rv_op_vsoxei64_v :
-    case rv_op_vl1re64_v  :
-    case rv_op_vl2re64_v  :
-    case rv_op_vl4re64_v  :
-    case rv_op_vl8re64_v  :
-    case rv_op_vs1re64_v  :
-    case rv_op_vs2re64_v  :
-    case rv_op_vs4re64_v  :
-    case rv_op_vs8re64_v  :
-    case rv_op_vle64ff_v  :
-      size = 8;
-      break;
   }
   return size;
 }
@@ -656,78 +576,6 @@ unsigned int RISCVDecoder::get_exec_microops(const DecodedInst *ins, int numLoad
 	case rv_op_c_sq      :
 	case rv_op_c_lqsp    :
 	case rv_op_c_sqsp    :
-	case rv_op_vle8_v    :
-	case rv_op_vse8_v    :
-	case rv_op_vle16_v   :
-	case rv_op_vse16_v   :
-	case rv_op_vle32_v   :
-	case rv_op_vse32_v   :
-	case rv_op_vle64_v   :
-	case rv_op_vse64_v   :
-	case rv_op_vle8ff_v  :
-	case rv_op_vle16ff_v :
-	case rv_op_vle32ff_v :
-	case rv_op_vle64ff_v :
-	case rv_op_vl1re8_v  :
-	case rv_op_vl1re16_v :
-	case rv_op_vl1re32_v :
-	case rv_op_vl1re64_v :
-	case rv_op_vl2re8_v  :
-	case rv_op_vl2re16_v :
-	case rv_op_vl2re32_v :
-	case rv_op_vl2re64_v :
-	case rv_op_vl4re8_v  :
-	case rv_op_vl4re16_v :
-	case rv_op_vl4re32_v :
-	case rv_op_vl4re64_v :
-	case rv_op_vl8re8_v  :
-	case rv_op_vl8re16_v :
-	case rv_op_vl8re32_v :
-	case rv_op_vl8re64_v :
-	case rv_op_vs1re8_v  :
-	case rv_op_vs1re16_v :
-	case rv_op_vs1re32_v :
-	case rv_op_vs1re64_v :
-	case rv_op_vs2re8_v  :
-	case rv_op_vs2re16_v :
-	case rv_op_vs2re32_v :
-	case rv_op_vs2re64_v :
-	case rv_op_vs4re8_v  :
-	case rv_op_vs4re16_v :
-	case rv_op_vs4re32_v :
-	case rv_op_vs4re64_v :
-	case rv_op_vs8re8_v  :
-	case rv_op_vs8re16_v :
-	case rv_op_vs8re32_v :
-	case rv_op_vs8re64_v :
-	case rv_op_vlse8_v   :
-	case rv_op_vsse8_v   :
-	case rv_op_vlse16_v  :
-	case rv_op_vsse16_v  :
-	case rv_op_vlse32_v  :
-	case rv_op_vsse32_v  :
-	case rv_op_vlse64_v  :
-	case rv_op_vsse64_v  :
-    case rv_op_vluxei8_v :
-    case rv_op_vloxei8_v :
-    case rv_op_vsuxei8_v :
-    case rv_op_vsoxei8_v :
-    case rv_op_vluxei16_v :
-    case rv_op_vloxei16_v :
-    case rv_op_vsuxei16_v :
-    case rv_op_vsoxei16_v :
-    case rv_op_vluxei32_v :
-    case rv_op_vloxei32_v :
-    case rv_op_vsuxei32_v :
-    case rv_op_vsoxei32_v :
-    case rv_op_vlseg4e32_v :
-    case rv_op_vlseg8e32_v :
-    case rv_op_vsseg4e32_v :
-    case rv_op_vsseg8e32_v :
-    case rv_op_vluxei64_v :
-    case rv_op_vloxei64_v :
-    case rv_op_vsuxei64_v :
-    case rv_op_vsoxei64_v :
       num_exec_uops = 0;
       break;
   }
@@ -993,10 +841,10 @@ void RISCVDecodedInst::set_disassembly()
       case '5': args += rv_freg_name_sym[dec.rs2]; break;
       case '6': args += rv_freg_name_sym[dec.rs3]; break;
       case '7': args += format_str("%d", dec.rs1); break;
-      case '8': args += rv_vreg_name_sym[dec.rd]; break;
-      case '9': args += rv_vreg_name_sym[dec.rs3]; break;
-      case 'b': args += rv_vreg_name_sym[dec.rs1]; break;
-      case 'd': args += rv_vreg_name_sym[dec.rs2]; break;
+      // case '8': args += rv_vreg_name_sym[dec.rd]; break;
+      // case '9': args += rv_vreg_name_sym[dec.rs3]; break;
+      // case 'b': args += rv_vreg_name_sym[dec.rs1]; break;
+      // case 'd': args += rv_vreg_name_sym[dec.rs2]; break;
       case 'i': args += format_str("%d", dec.imm); break;
       case 'o': args += format_str("pc %c %td",
         intptr_t(dec.imm) < 0 ? '-' : '+',
