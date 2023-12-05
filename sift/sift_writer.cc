@@ -19,8 +19,8 @@
 #endif
 
 // Enable (>0) to print out everything we write
-#define VERBOSE 0
-#define VERBOSE_HEX 0
+#define VERBOSE        0
+#define VERBOSE_HEX    0
 #define VERBOSE_ICACHE 0
 
 void __assert_fail(const char *__assertion, const char *__file, unsigned int __line, const char *__function) __THROW
@@ -169,12 +169,12 @@ Sift::Writer::~Writer()
    #if VERBOSE > 3
    printf("instrs %lu hsize", ninstrs);
    for(int i = 1; i < 16; ++i)
-      printf(" %u", hsize[i]);
+      printf(" %lu", hsize[i]);
    printf(" haddr");
-   for(int i = 1; i <= MAX_DYNAMIC_ADDRESSES; ++i)
-      printf(" %u", haddr[i]);
-   printf(" branch %u predicate %u\n", nbranch, npredicate);
-   printf("instrsmall %u ext %u\n", ninstrsmall, ninstrext);
+   for(uint32_t i = 1; i <= MAX_DYNAMIC_ADDRESSES; ++i)
+      printf(" %lu", haddr[i]);
+   printf(" branch %lu predicate %lu\n", nbranch, npredicate);
+   printf("instrsmall %lu ext %lu\n", ninstrsmall, ninstrext);
    #endif
 }
 

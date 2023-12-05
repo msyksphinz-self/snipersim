@@ -12,8 +12,8 @@
 #include <unistd.h>
 
 // Enable (>0) to print out everything we read
-#define VERBOSE 0
-#define VERBOSE_HEX 0
+#define VERBOSE        0
+#define VERBOSE_HEX    0
 #define VERBOSE_ICACHE 0
 
 Sift::Reader::Reader(const char *filename, const char *response_filename, uint32_t id)
@@ -310,7 +310,7 @@ bool Sift::Reader::Read(Instruction &inst)
                hexdump((char*)bytes, size);
                #endif
                #if VERBOSE > 1
-               for (int i = 0 ; i < (size/8) ; i++)
+               for (uint32_t i = 0 ; i < (size/8) ; i++)
                {
                   std::cerr << __FUNCTION__ << ": syscall args[" << i << "] = " << ((uint64_t*)bytes)[i] << std::endl;
                }
