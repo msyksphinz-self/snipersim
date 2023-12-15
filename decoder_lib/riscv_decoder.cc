@@ -179,8 +179,8 @@ void RISCVDecoder::decode(DecodedInst * inst)
   memcpy(&r_inst, inst->get_code(), 8);  // TODO: num_bytes from sift
 
   riscv::decode_inst_rv64(dec, r_inst);
-  decode_inst_type(dec, r_inst);
-  decode_pseudo_inst(dec);
+  // decode_inst_type(dec, r_inst);
+  // decode_pseudo_inst(dec);
 
   ((RISCVDecodedInst *)inst)->set_rv8_dec(dec);
 
