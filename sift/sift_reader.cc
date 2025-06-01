@@ -310,7 +310,7 @@ bool Sift::Reader::Read(Instruction &inst)
                hexdump((char*)bytes, size);
                #endif
                #if VERBOSE > 1
-               for (uint32_t i = 0 ; i < (size/8) ; i++)
+               for (unsigned i = 0 ; i < (size/8) ; i++)
                {
                   std::cerr << __FUNCTION__ << ": syscall args[" << i << "] = " << ((uint64_t*)bytes)[i] << std::endl;
                }
@@ -803,4 +803,10 @@ uint64_t Sift::Reader::va2pa(uint64_t va)
    {
       return va;
    }
+}
+
+void Sift::Reader::frontEndStop()
+{
+    if(response)
+	sendSimpleResponse(RecOtherType::RecOtherShutdown, NULL, 0);
 }

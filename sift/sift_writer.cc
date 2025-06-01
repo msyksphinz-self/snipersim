@@ -115,7 +115,8 @@ void Sift::Writer::initResponse()
    if (!response)
    {
      sift_assert(strcmp(m_response_filename, "") != 0);
-     response = new vifstream(m_response_filename, std::ios::in);
+     //response = new vifstream(m_response_filename, std::ios::in);
+     response = new cvifstream(m_response_filename, std::ios_base::in);
      sift_assert(!response->fail());
    }
 }
@@ -171,7 +172,7 @@ Sift::Writer::~Writer()
    for(int i = 1; i < 16; ++i)
       printf(" %lu", hsize[i]);
    printf(" haddr");
-   for(uint32_t i = 1; i <= MAX_DYNAMIC_ADDRESSES; ++i)
+   for(unsigned i = 1; i <= MAX_DYNAMIC_ADDRESSES; ++i)
       printf(" %lu", haddr[i]);
    printf(" branch %lu predicate %lu\n", nbranch, npredicate);
    printf("instrsmall %lu ext %lu\n", ninstrsmall, ninstrext);
@@ -353,6 +354,8 @@ Sift::Mode Sift::Writer::InstructionCount(uint32_t icount)
    }
    if (respRec.Other.type != RecOtherSyncResponse)
    {
+	if (respRec.Other.type == RecOtherShutdown)
+		frontEndStop();
       return Sift::ModeUnknown;
    }
    Mode mode;
@@ -476,6 +479,9 @@ int32_t Sift::Writer::NewThread()
             #endif
             return retcode;
             break;
+	 case RecOtherShutdown:
+	    frontEndStop();
+	    break;
          default:
             return -1;
             break;
@@ -567,6 +573,9 @@ uint64_t Sift::Writer::Syscall(uint16_t syscall_number, const char *data, uint32
          case RecOtherMemoryRequest:
             handleMemoryRequest(respRec);
             break;
+	 case RecOtherShutdown:
+	    frontEndStop();
+	    break;
       }
    }
 
@@ -624,6 +633,9 @@ int32_t Sift::Writer::Join(int32_t thread)
             response->read(reinterpret_cast<char*>(&retcode), sizeof(retcode));
             return retcode;
             break;
+	 case RecOtherShutdown:
+	    frontEndStop();
+	    break;
          default:
             return -1;
             break;
@@ -678,6 +690,9 @@ Sift::Mode Sift::Writer::Sync()
          case RecOtherMemoryRequest:
             handleMemoryRequest(respRec);
             break;
+	 case RecOtherShutdown:
+	    frontEndStop();
+	    break;
          default:
             return Sift::ModeUnknown;
             break;
@@ -717,6 +732,8 @@ int32_t Sift::Writer::Fork()
    }
    if (respRec.Other.type != RecOtherForkResponse)
    {
+      if (respRec.Other.type == RecOtherShutdown)
+	frontEndStop();
       return -1;
    }
    if (respRec.Other.size != sizeof(int32_t))
@@ -776,6 +793,9 @@ uint64_t Sift::Writer::Magic(uint64_t a, uint64_t b, uint64_t c)
          case RecOtherMemoryRequest:
             handleMemoryRequest(respRec);
             break;
+	 case RecOtherShutdown:
+	    frontEndStop();
+	    break;
          default:
             sift_assert(false);
             break;
@@ -828,6 +848,9 @@ bool Sift::Writer::Emulate(Sift::EmuType type, Sift::EmuRequest &req, Sift::EmuR
          case RecOtherMemoryRequest:
             handleMemoryRequest(respRec);
             break;
+	 case RecOtherShutdown:
+	    frontEndStop();
+	    break;
          default:
             return false;
             break;
@@ -1094,4 +1117,13 @@ void Sift::Writer::send_va2pa(uint64_t va)
          }
       }
    }
+}
+
+void Sift::Writer::frontEndStop()
+{
+  // Front end has been shut-down, shut-down ourselves as well...
+  #if VERBOSE > 2
+  printf("[FRONT-END] Front-end being forcefully stopped.\n");
+  #endif
+  exit(0);
 }
