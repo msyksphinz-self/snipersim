@@ -36,6 +36,7 @@ export SPECKLE_ROOT=$LOCAL_ROOT/Speckle
 export SPEC_DIR=$CPU2006_ROOT
 
 NPROC=(`nproc --all`)
+
 updateGitRepo() {
 	URL=$1
 	BRANCH=$2
@@ -62,10 +63,45 @@ echo "##########################################################################
 
 # 1b) riscv-tools - includes Spike (that support sift generation)
 echo "Setting up riscv-tools..."
-URL=https://github.com/nus-comparch/riscv-tools.git
-BRANCH=sift
-FOLDER=riscv-tools
-updateGitRepo "$URL" "$BRANCH" "$FOLDER"
+cd $LOCAL_ROOT
+
+# Configure git to use https:// instead of git:// protocol (local config)
+git config --local url."https://github.com/".insteadOf git://github.com/ 2>/dev/null || true
+
+if [ ! -d riscv-tools ]; then
+	# Clone riscv-tools
+	git clone -b sift https://github.com/nus-comparch/riscv-tools.git riscv-tools
+	cd riscv-tools
+	
+	# Initialize all submodules EXCEPT riscv-gnu-toolchain to avoid old version issues
+	git submodule update --init riscv-fesvr riscv-isa-sim riscv-opcodes riscv-openocd riscv-pk riscv-tests
+else
+	cd riscv-tools
+	git pull
+	# Update other submodules (not riscv-gnu-toolchain yet)
+	git submodule update --init riscv-fesvr riscv-isa-sim riscv-opcodes riscv-openocd riscv-pk riscv-tests
+fi
+
+# Now handle riscv-gnu-toolchain separately with latest tag (both new and existing cases)
+echo "Setting up riscv-gnu-toolchain with latest tag..."
+cd $LOCAL_ROOT/riscv-tools
+git submodule update --init riscv-gnu-toolchain
+cd riscv-gnu-toolchain
+
+# Configure git to use https:// instead of git:// protocol (local config for this repo)
+git config --local url."https://github.com/".insteadOf git://github.com/
+
+git fetch --tags
+LATEST_TAG=$(git tag --list | grep -E '^[0-9]{4}\.' | sort -V | tail -1)
+if [ -n "$LATEST_TAG" ]; then
+	echo "Checking out riscv-gnu-toolchain tag: $LATEST_TAG"
+	git checkout $LATEST_TAG
+	# NOTE: Do NOT recursively init submodules here
+	# riscv-gnu-toolchain will download required components during build time
+fi
+
+cd $LOCAL_ROOT
+
 echo "####################################################################################"
 
 # 1c) rv8 simulator (that support sift generation)
