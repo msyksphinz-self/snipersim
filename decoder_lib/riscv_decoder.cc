@@ -494,6 +494,55 @@ Decoder::decoder_reg RISCVDecoder::last_reg()
   return dl::last_reg; // enum reg_num defined in riscv_decoder.h
 }
 
+/// Get the input register mapped
+uint32_t RISCVDecoder::map_register(decoder_reg reg)
+{
+  // RISC-V doesn't have register aliasing like x86
+  return static_cast<uint32_t>(reg);
+}
+
+/// Get the number of implicit registers that are read by the instruction
+unsigned int RISCVDecoder::num_read_implicit_registers(const DecodedInst* inst)
+{
+  // RISC-V has explicit operands; no implicit reads except for special cases
+  return 0;
+}
+
+/// Get the idx implicit source register
+Decoder::decoder_reg RISCVDecoder::get_read_implicit_reg(const DecodedInst* inst, unsigned int idx)
+{
+  // No implicit source registers in RISC-V
+  return Decoder::DL_REG_INVALID;
+}
+
+/// Get the number of implicit registers that are written by the instruction
+unsigned int RISCVDecoder::num_write_implicit_registers(const DecodedInst* inst)
+{
+  // RISC-V has explicit operands; no implicit writes
+  return 0;
+}
+
+/// Get the idx implicit destiny register
+Decoder::decoder_reg RISCVDecoder::get_write_implicit_reg(const DecodedInst* inst, unsigned int idx)
+{
+  // No implicit destination registers in RISC-V
+  return Decoder::DL_REG_INVALID;
+}
+
+/// Check if the base register of the memory operand pointed by mem_idx is also updated
+bool RISCVDecoder::mem_base_upate(const DecodedInst* inst, unsigned int mem_idx)
+{
+  // RISC-V doesn't have auto-increment/decrement addressing modes like ARM
+  return false;
+}
+
+/// Check if the memory operand pointed by mem_idx has an index register
+bool RISCVDecoder::has_index_reg(const DecodedInst* inst, unsigned int mem_idx)
+{
+  // RISC-V uses base+offset addressing, no index register
+  return false;
+}
+
 
 RISCVDecodedInst::RISCVDecodedInst(Decoder* d, const uint8_t * code, size_t size, uint64_t address)
 {
@@ -545,7 +594,7 @@ std::string format_str(const char* fmt, ...) //rv8 src/util/util.cc
 }
 
 /// Get a string with the disassembled instruction
-void RISCVDecodedInst::disassembly_to_str(char *str, int len) const
+std::string RISCVDecodedInst::disassembly_to_str() const
 { 
   riscv::decode dec = this->rv8_dec;
   std::string args;
@@ -606,8 +655,7 @@ void RISCVDecodedInst::disassembly_to_str(char *str, int len) const
     fmt++;
 	}
 
-  strncpy(str, args.c_str(), len-1);
-  str[len-1] = '\0';
+  return args;
 }
 
 /// Check if this instruction is a NOP
@@ -716,6 +764,21 @@ bool RISCVDecodedInst::is_mem_pair() const
 {
   // instr like ldnp, ldpsw, stnp, stp in ARM
   // no load/store pair instructions in RISCV
+  return false;
+}
+
+/// Check if this instruction is an indirect branch
+bool RISCVDecodedInst::is_indirect_branch() const
+{
+  riscv::decode dec = this->rv8_dec;
+  // JALR is the indirect jump/branch instruction in RISC-V
+  return (dec.op == rv_op_jalr);
+}
+
+/// Check if this instruction has writeback
+bool RISCVDecodedInst::is_writeback() const
+{
+  // RISC-V doesn't have ARM-style writeback addressing modes
   return false;
 }
 
