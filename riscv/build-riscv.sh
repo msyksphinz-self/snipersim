@@ -68,17 +68,24 @@ cd $LOCAL_ROOT
 # Configure git to use https:// instead of git:// protocol (local config)
 git config --local url."https://github.com/".insteadOf git://github.com/ 2>/dev/null || true
 
+# NOTE: This uses an older 'sift' branch (2018) from nus-comparch/riscv-tools
+#       which still has riscv-fesvr as a separate submodule.
+#       In newer official riscv-isa-sim (2020+), fesvr has been integrated.
+#       If updating to a newer version, riscv-fesvr may not be needed as a separate submodule.
+
 if [ ! -d riscv-tools ]; then
 	# Clone riscv-tools
 	git clone -b sift https://github.com/nus-comparch/riscv-tools.git riscv-tools
 	cd riscv-tools
 	
 	# Initialize all submodules EXCEPT riscv-gnu-toolchain to avoid old version issues
+	# riscv-fesvr: Front-end server (deprecated in newer versions, integrated into riscv-isa-sim)
 	git submodule update --init riscv-fesvr riscv-isa-sim riscv-opcodes riscv-openocd riscv-pk riscv-tests
 else
 	cd riscv-tools
 	git pull
 	# Update other submodules (not riscv-gnu-toolchain yet)
+	# riscv-fesvr: Still needed for this older sift branch
 	git submodule update --init riscv-fesvr riscv-isa-sim riscv-opcodes riscv-openocd riscv-pk riscv-tests
 fi
 
