@@ -121,7 +121,46 @@ updateGitRepo "$URL" "$BRANCH" "$FOLDER"
 echo "####################################################################################"
 
 ### 2) Compiling Binaries
-# 2a) Sniper
+
+# 2a) Generate RISC-V Decoder Header
+echo "Generating RISC-V Decoder Header..."
+cd $SNIPER_ROOT
+if [ -f riscv/scripts/generate_riscv_decoder.py ] && [ -f riscv/riscv-opcodes-latest/arg_lut.csv ]; then
+    echo "  Generating decoder_lib/riscv_decoder_generated.h..."
+    cat riscv/riscv-opcodes-latest/extensions/rv_i \
+        riscv/riscv-opcodes-latest/extensions/rv64_i \
+        riscv/riscv-opcodes-latest/extensions/rv_m \
+        riscv/riscv-opcodes-latest/extensions/rv64_m \
+        riscv/riscv-opcodes-latest/extensions/rv_a \
+        riscv/riscv-opcodes-latest/extensions/rv64_a \
+        riscv/riscv-opcodes-latest/extensions/rv_f \
+        riscv/riscv-opcodes-latest/extensions/rv64_f \
+        riscv/riscv-opcodes-latest/extensions/rv_d \
+        riscv/riscv-opcodes-latest/extensions/rv64_d \
+        riscv/riscv-opcodes-latest/extensions/rv_c \
+        riscv/riscv-opcodes-latest/extensions/rv64_c \
+        riscv/riscv-opcodes-latest/extensions/rv64_zba \
+        riscv/riscv-opcodes-latest/extensions/rv64_zbb \
+        riscv/riscv-opcodes-latest/extensions/rv64_zbs \
+        riscv/riscv-opcodes-latest/extensions/rv_v | \
+    python3 riscv/scripts/generate_riscv_decoder.py \
+        riscv/riscv-opcodes-latest/arg_lut.csv \
+        /dev/stdin > \
+        decoder_lib/riscv_decoder_generated.h
+    
+    if [ $? -eq 0 ]; then
+        INST_COUNT=$(grep -c "rv_op_" decoder_lib/riscv_decoder_generated.h | head -1)
+        echo "  ✓ Generated decoder with ~${INST_COUNT} instructions"
+    else
+        echo "  ✗ Decoder generation failed!"
+        exit 1
+    fi
+else
+    echo "  Warning: Decoder generation skipped (missing files)"
+fi
+echo "####################################################################################"
+
+# 2b) Sniper
 echo "Compiling Sniper..."
 cd $SNIPER_ROOT
 make # TODO: Parallel builds currently broken
@@ -131,7 +170,7 @@ if [ $? -ne 0 ]; then
 fi
 echo "####################################################################################"
 
-# 2b) riscv-tools (includes Spike)
+# 2c) riscv-tools (includes Spike)
 echo "Building riscv-tools..."
 cd $LOCAL_ROOT/riscv-tools
 echo "Building RISC-V Tools with $NPROC process(es)"
@@ -142,14 +181,14 @@ if [ $? -ne 0 ]; then
 fi
 echo "####################################################################################"
 
-# 2c) rv8
+# 2d) rv8
 #echo "Compiling rv8 simulator..."
 #cd $RV8_HOME
 #make test-build TEST_RV64="ARCH=rv64imafd TARGET=riscv64-unknown-elf"
 #make -j $NPROC
 #echo "####################################################################################"
 
-# 2d) Speckle - to compile and copy SPEC CPU2006 binaries
+# 2e) Speckle - to compile and copy SPEC CPU2006 binaries
 echo "Compiling SPEC CPU2006 binaries..."
 cd $SPECKLE_ROOT
 ./gen_binaries_sift.sh --compile --copy
