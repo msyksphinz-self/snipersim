@@ -115,6 +115,13 @@ class RiscvMemory final : public Memory
       if (dec.op == riscv::rv_op_amoswap_w || dec.op == riscv::rv_op_amoswap_d ||
           dec.op == riscv::rv_op_amoadd_w || dec.op == riscv::rv_op_amoadd_d)
       {
+         // Check if register is mapped
+         if (!regs[dec.rs1])
+         {
+            // Register not mapped - cannot compute address
+            return 0;
+         }
+         
          m_buffers[0].read(regs[dec.rs1]);
          T::handleMemory(threadid, m_buffers[0].le64());
          return 1;

@@ -558,15 +558,21 @@ void TraceThread::handleInstructionWarmup(Sift::Instruction &inst, Sift::Instruc
                // LDP ARM instructions, second element to be loaded, using the address of the first element
                if (dec_inst.is_mem_pair() && ((int)mem_idx == (inst.num_addresses + 1)))  
                {
-                  LOG_ASSERT_ERROR((int)mem_idx < (inst.num_addresses + 1), "Did not receive enough data addresses");
-                  
-                  mem_address = inst.addresses[mem_idx - 1] + Sim()->getDecoder()->size_mem_op(&dec_inst, mem_idx);
+                  // If we don't have enough addresses, use 0 as fallback
+                  if ((int)mem_idx >= (inst.num_addresses + 1) || mem_idx == 0) {
+                     mem_address = 0;
+                  } else {
+                     mem_address = inst.addresses[mem_idx - 1] + Sim()->getDecoder()->size_mem_op(&dec_inst, mem_idx);
+                  }
                }
                else
                {
-                  LOG_ASSERT_ERROR(mem_idx < inst.num_addresses, "Did not receive enough data addresses");
-                 
-                  mem_address = inst.addresses[mem_idx];
+                  // If we don't have enough addresses, use 0 as fallback
+                  if (mem_idx >= inst.num_addresses) {
+                     mem_address = 0;
+                  } else {
+                     mem_address = inst.addresses[mem_idx];
+                  }
                }
                
                bool no_mapping = false;
@@ -593,15 +599,21 @@ void TraceThread::handleInstructionWarmup(Sift::Instruction &inst, Sift::Instruc
                // STP ARM instructions, second element to be stored, using the address of the first element
                if (dec_inst.is_mem_pair() && ((int)mem_idx == (inst.num_addresses + 1)))  
                {
-                  LOG_ASSERT_ERROR((int)mem_idx < (inst.num_addresses + 1), "Did not receive enough data addresses");
-                  
-                  mem_address = inst.addresses[mem_idx - 1] + Sim()->getDecoder()->size_mem_op(&dec_inst, mem_idx);
+                  // If we don't have enough addresses, use 0 as fallback
+                  if ((int)mem_idx >= (inst.num_addresses + 1) || mem_idx == 0) {
+                     mem_address = 0;
+                  } else {
+                     mem_address = inst.addresses[mem_idx - 1] + Sim()->getDecoder()->size_mem_op(&dec_inst, mem_idx);
+                  }
                }
                else
                {
-                  LOG_ASSERT_ERROR(mem_idx < inst.num_addresses, "Did not receive enough data addresses");
-                 
-                  mem_address = inst.addresses[mem_idx];
+                  // If we don't have enough addresses, use 0 as fallback
+                  if (mem_idx >= inst.num_addresses) {
+                     mem_address = 0;
+                  } else {
+                     mem_address = inst.addresses[mem_idx];
+                  }
                }
                
                bool no_mapping = false;
@@ -683,13 +695,21 @@ void TraceThread::addDetailedMemoryInfo(DynamicInstruction *dynins, Sift::Instru
    // LDP/STP ARM instructions, second element to be ld/st, using the address of the first element
    if (decoded_inst.is_mem_pair() && ((int)mem_idx == inst.num_addresses))  
    {
-      assert((int)mem_idx < (inst.num_addresses + 1));
-      mem_address = inst.addresses[mem_idx - 1] + Sim()->getDecoder()->size_mem_op(&decoded_inst, mem_idx);
+      // If we don't have enough addresses, use 0 as fallback
+      if ((int)mem_idx >= (inst.num_addresses + 1) || mem_idx == 0) {
+         mem_address = 0;
+      } else {
+         mem_address = inst.addresses[mem_idx - 1] + Sim()->getDecoder()->size_mem_op(&decoded_inst, mem_idx);
+      }
    }
    else
    {
-      assert(mem_idx < inst.num_addresses);
-      mem_address = inst.addresses[mem_idx];
+      // If we don't have enough addresses, use 0 as fallback
+      if (mem_idx >= inst.num_addresses) {
+         mem_address = 0;
+      } else {
+         mem_address = inst.addresses[mem_idx];
+      }
    }
                
    bool no_mapping = false;

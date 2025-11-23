@@ -2,6 +2,8 @@
 #include <forward_list>
 #include <optional>
 #include <cstring>
+#include <cstdio>
+#include <qemu/qemu-plugin.h>
 #include "../../decoder_lib/decoder.h"
 #include "../../decoder_lib/riscv_decoder_simple.h"
 #include "../frontend.h"
@@ -343,10 +345,73 @@ void QemuFrontend::threadStart(unsigned int threadid)
       }
 
       // Map registers from QEMU plugin to decoder register IDs
-      // This is a simplified version - in practice, you would need to
-      // map based on register names and features
-      // TODO: Implement proper register mapping using register names
-      // For RISC-V, we can use register names like "x0", "x1", etc.
+      // For RISC-V, map integer registers (x0-x31) and floating-point registers (f0-f31)
+      if (m_options->get_theISA() == RISCV)
+      {
+         // Debug: Print all available registers
+         printf("[FRONTEND] Available registers:\n");
+         for (guint i = 0; i < regs->len; i++)
+         {
+            qemu_plugin_reg_descriptor *descriptor =
+               &g_array_index(regs, qemu_plugin_reg_descriptor, i);
+            printf("[FRONTEND]   Register[%u]: name='%s', feature='%s'\n", 
+                   i, descriptor->name, descriptor->feature);
+         }
+         
+         // Map integer registers (x0-x31) using GDB register names
+         // RISC-V GDB register names: zero, ra, sp, gp, tp, t0-t6, s0-s11, a0-a7
+         const char* gdb_reg_names[32] = {
+            "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+            "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+            "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+            "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
+         };
+         
+         for (int i = 0; i < 32; i++)
+         {
+            // Try GDB name first
+            void* reg_handle = pluginFindRegister(regs, gdb_reg_names[i], "org.gnu.gdb.riscv.cpu");
+            
+            // If not found, try xN format as fallback
+            if (!reg_handle)
+            {
+               char reg_name[8];
+               snprintf(reg_name, sizeof(reg_name), "x%d", i);
+               reg_handle = pluginFindRegister(regs, reg_name, "org.gnu.gdb.riscv.cpu");
+            }
+            
+            // For x8, also try "fp" (frame pointer alias)
+            if (!reg_handle && i == 8)
+            {
+               reg_handle = pluginFindRegister(regs, "fp", "org.gnu.gdb.riscv.cpu");
+            }
+            
+            if (reg_handle)
+            {
+               // Map to decoder register ID: rv_ireg_x0 = 0, rv_ireg_x1 = 1, etc.
+               m_executions[threadid].regs[dl::rv_ireg_x0 + i] = reg_handle;
+               printf("[FRONTEND] Mapped register x%d (%s) to regs[%d] (rv_ireg_x%d)\n", 
+                      i, gdb_reg_names[i], dl::rv_ireg_x0 + i, i);
+            }
+            else
+            {
+               printf("[FRONTEND] WARNING: Failed to find register x%d (%s)\n", i, gdb_reg_names[i]);
+            }
+         }
+         
+         // Map floating-point registers (f0-f31)
+         for (int i = 0; i < 32; i++)
+         {
+            char reg_name[8];
+            snprintf(reg_name, sizeof(reg_name), "f%d", i);
+            void* reg_handle = pluginFindRegister(regs, reg_name, "org.gnu.gdb.riscv.fpu");
+            if (reg_handle)
+            {
+               // Map to decoder register ID: rv_freg_f0 = 32, rv_freg_f1 = 33, etc.
+               m_executions[threadid].regs[dl::rv_freg_f0 + i] = reg_handle;
+            }
+         }
+      }
 
       // Initialize memory handler based on ISA
       switch (m_options->get_theISA())
