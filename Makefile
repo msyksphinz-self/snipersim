@@ -5,13 +5,14 @@ CLEAN=$(findstring clean,$(MAKECMDGOALS))
 STANDALONE=$(SIM_ROOT)/lib/sniper
 PIN_FRONTEND=$(SIM_ROOT)/frontend/pin-frontend/obj-intel64/pin_frontend
 DYNAMORIO_FRONTEND=$(SIM_ROOT)/frontend/dr-frontend/build/libdr-frontend.so
+QEMU_FRONTEND=$(SIM_ROOT)/frontend/qemu-frontend/libqemu-frontend.so
 LIB_CARBON=$(SIM_ROOT)/lib/libcarbon_sim.a
 LIB_PIN_SIM=$(SIM_ROOT)/pin/../lib/pin_sim.so
 LIB_FOLLOW=$(SIM_ROOT)/pin/../lib/follow_execv.so
 LIB_SIFT=$(SIM_ROOT)/sift/libsift.a
 LIB_DECODER=$(SIM_ROOT)/decoder_lib/libdecoder.a
 LIB_TORCH=$(SIM_ROOT)/libtorch/lib/libtorch.so
-SIM_TARGETS=$(LIB_DECODER) $(LIB_CARBON) $(LIB_SIFT) $(LIB_PIN_SIM) $(LIB_FOLLOW) $(STANDALONE) $(PIN_FRONTEND) $(DYNAMORIO_FRONTEND) $(LIB_TORCH)
+SIM_TARGETS=$(LIB_DECODER) $(LIB_CARBON) $(LIB_SIFT) $(LIB_PIN_SIM) $(LIB_FOLLOW) $(STANDALONE) $(PIN_FRONTEND) $(DYNAMORIO_FRONTEND) $(QEMU_FRONTEND) $(LIB_TORCH)
 
 PYTHON2=python2
 
@@ -119,6 +120,9 @@ else
 $(DYNAMORIO_FRONTEND):
 	$(_CMD) true
 endif
+
+$(QEMU_FRONTEND): $(LIB_SIFT) $(LIB_DECODER) $(LIB_CARBON)
+	@$(MAKE) $(MAKE_QUIET) -C $(SIM_ROOT)/frontend/qemu-frontend
 
 # Disable original frontend
 
@@ -300,6 +304,8 @@ clean: empty_config empty_deps
 	$(_CMD) if [ -d "$(PIN_HOME)" ]; then $(MAKE) $(MAKE_QUIET) -C frontend/pin-frontend clean ; fi
 	$(_MSG) '[CLEAN ] frontend/dr-frontend'
 	$(_CMD) if [ -d "$(SIM_ROOT)/frontend/dr-frontend/build" ]; then rm -rf $(SIM_ROOT)/frontend/dr-frontend/build ; fi
+	$(_MSG) '[CLEAN ] frontend/qemu-frontend'
+	$(_CMD) $(MAKE) $(MAKE_QUIET) -C frontend/qemu-frontend clean
 	$(_CMD) rm -f .build_os
 
 distclean: clean

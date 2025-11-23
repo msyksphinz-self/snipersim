@@ -1,7 +1,7 @@
 #include "decoder.h"
 #include "x86_decoder.h"
 #if SNIPER_RISCV
-#include "riscv_decoder.h"
+#include "riscv_decoder_simple.h"
 #endif
 #if SNIPER_ARM
 #include "arm_decoder.h"
@@ -68,7 +68,7 @@ Decoder *DecoderFactory::CreateDecoder(dl_arch arch, dl_mode mode, dl_syntax syn
       return new X86Decoder(arch, mode, syntax);
     case DL_ARCH_RISCV:
 #if SNIPER_RISCV
-      return new RISCVDecoder(arch, mode, syntax);
+      return new RISCVDecoderSimple(arch, mode, syntax);
 #else
       return NULL;
 #endif 
@@ -93,7 +93,7 @@ DecodedInst *DecoderFactory::CreateInstruction(Decoder * d, const uint8_t * code
       return new X86DecodedInst(d, code, size, addr);
     case DL_ARCH_RISCV:
 #if SNIPER_RISCV
-      return new RISCVDecodedInst(d, code, size, addr);
+      return new RISCVDecodedInstSimple(d, code, size, addr);
 #else
       return NULL;
 #endif
