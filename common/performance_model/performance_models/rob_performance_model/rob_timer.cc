@@ -18,9 +18,8 @@
 #include <sstream>
 #include <iomanip>
 
-// Define to get per-cycle printout of dispatch, issue, writeback stages
-//#define DEBUG_PERCYCLE
-//#define STOP_PERCYCLE
+// DEBUG_PERCYCLE and STOP_PERCYCLE are now runtime configurable via config file
+// See rob_timer.h for member variables m_debug_percycle and m_stop_percycle
 
 // Define to not skip any cycles, but assert that the skip logic is working fine
 //#define ASSERT_SKIP
@@ -60,6 +59,12 @@ RobTimer::RobTimer(
       , perf(_perf)
       , m_cpiCurrentFrontEndStall(NULL)
       , m_mlp_histogram(Sim()->getCfg()->getBoolArray("perf_model/core/rob_timer/mlp_histogram", core->getId()))
+      , m_debug_percycle(Sim()->getCfg()->hasKey("perf_model/core/rob_timer/debug_percycle") 
+                         ? Sim()->getCfg()->getBoolArray("perf_model/core/rob_timer/debug_percycle", core->getId())
+                         : false)
+      , m_stop_percycle(Sim()->getCfg()->hasKey("perf_model/core/rob_timer/stop_percycle")
+                        ? Sim()->getCfg()->getBoolArray("perf_model/core/rob_timer/stop_percycle", core->getId())
+                        : false)
 {
 
    registerStatsMetric("rob_timer", core->getId(), "time_skipped", &time_skipped);
@@ -333,25 +338,25 @@ boost::tuple<uint64_t,SubsecondTime> RobTimer::simulate(const std::vector<Dynami
          }
       }
 
-      #ifdef DEBUG_PERCYCLE
-      // Make sure we are in the dependant list of all of our address producers
-      for(unsigned int i = 0; i < entry->getNumAddressProducers(); ++i)
-      {
-         if (rob.size() && entry->getAddressProducer(i) >= rob[0].uop->getSequenceNumber())
+      if (m_debug_percycle) {
+         // Make sure we are in the dependant list of all of our address producers
+         for(unsigned int i = 0; i < entry->getNumAddressProducers(); ++i)
          {
-            RobEntry *prodEntry = this->findEntryBySequenceNumber(entry->getAddressProducer(i));
-            bool found = false;
-            for(unsigned int j = 0; j < prodEntry->getNumDependants(); ++j)
-               if (prodEntry->getDependant(j) == entry)
-               {
-                  found = true;
-                  break;
-               }
-            LOG_ASSERT_ERROR(found == true, "Store %ld depends on %ld for address production, but is not in its dependants list",
-                             entry->uop->getSequenceNumber(), prodEntry->uop->getSequenceNumber());
+            if (rob.size() && entry->getAddressProducer(i) >= rob[0].uop->getSequenceNumber())
+            {
+               RobEntry *prodEntry = this->findEntryBySequenceNumber(entry->getAddressProducer(i));
+               bool found = false;
+               for(unsigned int j = 0; j < prodEntry->getNumDependants(); ++j)
+                  if (prodEntry->getDependant(j) == entry)
+                  {
+                     found = true;
+                     break;
+                  }
+               LOG_ASSERT_ERROR(found == true, "Store %ld depends on %ld for address production, but is not in its dependants list",
+                                entry->uop->getSequenceNumber(), prodEntry->uop->getSequenceNumber());
+            }
          }
       }
-      #endif
 
       if (minProducerDistance != UINT64_MAX)
       {
@@ -377,9 +382,9 @@ boost::tuple<uint64_t,SubsecondTime> RobTimer::simulate(const std::vector<Dynami
          entry->ready = entry->readyMax;
       }
 
-      #ifdef DEBUG_PERCYCLE
+      if (m_debug_percycle) {
          std::cout<<"** simulate: "<< entry->uop->getMicroOp()->toShortString(true) << std::endl << entry->uop->getMicroOp()->toString()<<std::endl;
-      #endif
+      }
 
       m_uop_type_count[(*it)->getMicroOp()->getSubtype()]++;
       m_uops_total++;
@@ -390,12 +395,10 @@ boost::tuple<uint64_t,SubsecondTime> RobTimer::simulate(const std::vector<Dynami
          LOG_PRINT_WARNING_ONCE("Significant fraction of x87 instructions encountered, accuracy will be low. Compile without -mno-sse2 -mno-sse3 to avoid.");
    }
 
-#ifdef DEBUG_PERCYCLE
-#ifdef STOP_PERCYCLE
-   char a;
-   std::cin >> a;
-#endif
-#endif
+   if (m_debug_percycle && m_stop_percycle) {
+      char a;
+      std::cin >> a;
+   }
    while (true)
    {
       uint64_t instructionsExecuted;
@@ -405,11 +408,10 @@ boost::tuple<uint64_t,SubsecondTime> RobTimer::simulate(const std::vector<Dynami
       totalLat += latency;
       if (latency == SubsecondTime::Zero())
          break;
-#ifdef DEBUG_PERCYCLE
-#ifdef STOP_PERCYCLE
-          std::cin >> a;
-#endif
-#endif
+      if (m_debug_percycle && m_stop_percycle) {
+         char a;
+         std::cin >> a;
+      }
    }
 
    return boost::tuple<uint64_t,SubsecondTime>(totalInsnExec, totalLat);
@@ -479,16 +481,16 @@ SubsecondTime RobTimer::doDispatch(SubsecondTime **cpiComponent)
             if (in_icache_miss)
             {
                // We just took the latency for this instruction, now dispatch it
-               #ifdef DEBUG_PERCYCLE
+               if (m_debug_percycle) {
                   std::cout<<"-- icache return"<<std::endl;
-               #endif
+               }
                in_icache_miss = false;
             }
             else
             {
-               #ifdef DEBUG_PERCYCLE
+               if (m_debug_percycle) {
                   std::cout<<"-- icache miss("<<uop.getICacheLatency()<<")"<<std::endl;
-               #endif
+               }
                frontend_stalled_until = now + uop.getICacheLatency();
                in_icache_miss = true;
                // Don't dispatch this instruction yet
@@ -515,9 +517,9 @@ SubsecondTime RobTimer::doDispatch(SubsecondTime **cpiComponent)
          entry->ready = std::max(entry->ready, (now + 1ul).getElapsedTime());
          next_event = std::min(next_event, entry->ready);
 
-         #ifdef DEBUG_PERCYCLE
+         if (m_debug_percycle) {
             std::cout<<"DISPATCH "<<entry->uop->getMicroOp()->toShortString()<<std::endl;
-         #endif
+         }
 
          #ifdef ASSERT_SKIP
             LOG_ASSERT_ERROR(will_skip == false, "Cycle would have been skipped but stuff happened");
@@ -527,9 +529,9 @@ SubsecondTime RobTimer::doDispatch(SubsecondTime **cpiComponent)
          if (uop.getMicroOp()->isBranch() && uop.isBranchMispredicted())
          {
             frontend_stalled_until = SubsecondTime::MaxTime();
-            #ifdef DEBUG_PERCYCLE
+            if (m_debug_percycle) {
                std::cout<<"-- branch mispredict"<<std::endl;
-            #endif
+            }
             cpiFrontEnd = &m_cpiBranchPredictor;
             break;
          }
@@ -645,9 +647,9 @@ void RobTimer::issueInstruction(uint64_t idx, SubsecondTime &next_event)
 
    --m_rs_entries_used;
 
-   #ifdef DEBUG_PERCYCLE
+   if (m_debug_percycle) {
       std::cout<<"ISSUE    "<<entry->uop->getMicroOp()->toShortString()<<"   latency="<<uop.getExecLatency()<<std::endl;
-   #endif
+   }
 
    for(size_t idx = 0; idx < entry->getNumDependants(); ++idx)
    {
@@ -701,9 +703,9 @@ void RobTimer::issueInstruction(uint64_t idx, SubsecondTime &next_event)
    if (uop.getMicroOp()->isBranch() && uop.isBranchMispredicted())
    {
       frontend_stalled_until = now + (misprediction_penalty - 2); // The frontend needs to start 2 cycles earlier to get a total penalty of <misprediction_penalty>
-      #ifdef DEBUG_PERCYCLE
+      if (m_debug_percycle) {
          std::cout<<"-- branch resolve"<<std::endl;
-      #endif
+      }
    }
 }
 
@@ -849,9 +851,9 @@ SubsecondTime RobTimer::doCommit(uint64_t& instructionsExecuted)
    {
       RobEntry *entry = &rob.front();
 
-      #ifdef DEBUG_PERCYCLE
+      if (m_debug_percycle) {
          std::cout<<"COMMIT   "<<entry->uop->getMicroOp()->toShortString()<<std::endl;
-      #endif
+      }
 
       // Send instructions to loop tracer, in-order, once we know their issue time
       InstructionTracer::uop_times_t times = {
@@ -890,10 +892,10 @@ void RobTimer::execute(uint64_t& instructionsExecuted, SubsecondTime& latency)
    instructionsExecuted = 0;
    SubsecondTime *cpiComponent = NULL;
 
-   #ifdef DEBUG_PERCYCLE
+   if (m_debug_percycle) {
       std::cout<<std::endl;
       std::cout<<"Running cycle "<<SubsecondTime::divideRounded(now, now.getPeriod())<<std::endl;
-   #endif
+   }
 
 
    // If frontend not stalled
@@ -915,7 +917,7 @@ void RobTimer::execute(uint64_t& instructionsExecuted, SubsecondTime& latency)
    SubsecondTime next_commit   = doCommit(instructionsExecuted);
 
 
-   #ifdef DEBUG_PERCYCLE
+   if (m_debug_percycle) {
       #ifdef ASSERT_SKIP
          if (! will_skip)
          {
@@ -924,19 +926,19 @@ void RobTimer::execute(uint64_t& instructionsExecuted, SubsecondTime& latency)
       #ifdef ASSERT_SKIP
          }
       #endif
-   #endif
+   }
 
 
-   #ifdef DEBUG_PERCYCLE
+   if (m_debug_percycle) {
       std::cout<<"Next event: D("<<SubsecondTime::divideRounded(next_dispatch, now.getPeriod())<<") I("<<SubsecondTime::divideRounded(next_issue, now.getPeriod())<<") C("<<SubsecondTime::divideRounded(next_commit, now.getPeriod())<<")"<<std::endl;
-   #endif
+   }
    SubsecondTime next_event = std::min(next_dispatch, std::min(next_issue, next_commit));
    SubsecondTime skip;
    if (next_event != SubsecondTime::MaxTime() && next_event > now + 1ul)
    {
-      #ifdef DEBUG_PERCYCLE
+      if (m_debug_percycle) {
          std::cout<<"++ Skip "<<SubsecondTime::divideRounded(next_event - now, now.getPeriod())<<std::endl;
-      #endif
+      }
       will_skip = true;
       skip = next_event - now;
    }

@@ -135,6 +135,10 @@ private:
    std::vector<std::vector<SubsecondTime> > m_outstandingLoads;
    std::vector<SubsecondTime> m_outstandingLoadsAll;
 
+   // Runtime configurable debug flags (replaces compile-time DEBUG_PERCYCLE and STOP_PERCYCLE)
+   const bool m_debug_percycle;
+   const bool m_stop_percycle;
+
    RobEntry *findEntryBySequenceNumber(UInt64 sequenceNumber);
    SubsecondTime* findCpiComponent();
    void countOutstandingMemop(SubsecondTime time);
