@@ -47,19 +47,16 @@ void RISCVDecoderSimple::decode(DecodedInst * inst)
 
   riscv::inst_t r_inst;
   memcpy(&r_inst, inst->get_code(), 8);
-
-  int op = riscv::decode_inst_op(r_inst);
-  
-  if (op == 0) {
-    inst->get_size() = 4;
-    inst->set_already_decoded(true);
-    return;
-  }
   
   uint32_t inst_bits = r_inst & 0xFFFFFFFF;
   inst->get_size() = ((inst_bits & 0x3) != 0x3) ? 2 : 4;
 
   riscv::decode_inst_rv64(dec, r_inst);
+  
+  // Decode instruction opcode using the generated decode_inst_op function
+  int op = riscv::decode_inst_op(inst_bits);
+  dec.op = op;
+  
   ((RISCVDecodedInstSimple *)inst)->set_decode(dec);
   inst->set_already_decoded(true);
 }
