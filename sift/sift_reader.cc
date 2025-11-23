@@ -151,13 +151,13 @@ bool Sift::Reader::initResponse()
    {
       if (strcmp(m_response_filename, "") == 0)
       {
-         std::cerr << "[SIFT:" << m_id << "] Response filename not set\n";
-         return false;
+         // Response file not needed (e.g., for read-only tools like siftdump)
+         return true;
       }
       response = new vofstream(m_response_filename, std::ios::out);
    }
 
-   if ((!response->is_open()) || (response->fail()))
+   if (response && ((!response->is_open()) || (response->fail())))
    {
       std::cerr << "[SIFT:" << m_id << "] Cannot open " << m_response_filename << "\n";
       return false;
@@ -569,6 +569,12 @@ bool Sift::Reader::AccessMemory(MemoryLockType lock_signal, MemoryOpType mem_op,
       return false;
    }
 
+   if (!response)
+   {
+      std::cerr << "[SIFT:" << m_id << "] Error: Response file required for AccessMemory\n";
+      return false;
+   }
+
    Record rec;
    rec.Other.zero = 0;
    rec.Other.type = RecOtherMemoryRequest;
@@ -710,6 +716,13 @@ void Sift::Reader::sendSyscallResponse(uint64_t return_code)
    if (!initResponse())
    {
       std::cerr << "[SIFT:" << m_id << "] Error: initResponse failed\n";
+      return;
+   }
+
+   if (!response)
+   {
+      // Response file not needed (e.g., for read-only tools like siftdump)
+      return;
    }
 
    Record rec;
@@ -730,6 +743,13 @@ void Sift::Reader::sendEmuResponse(bool handled, EmuReply res)
    if (!initResponse())
    {
       std::cerr << "[SIFT:" << m_id << "] Error: initResponse failed\n";
+      return;
+   }
+
+   if (!response)
+   {
+      // Response file not needed (e.g., for read-only tools like siftdump)
+      return;
    }
 
    Record rec;
@@ -752,6 +772,13 @@ void Sift::Reader::sendSimpleResponse(RecOtherType type, void *data, uint32_t si
    if (!initResponse())
    {
       std::cerr << "[SIFT:" << m_id << "] Error: initResponse failed\n";
+      return;
+   }
+
+   if (!response)
+   {
+      // Response file not needed (e.g., for read-only tools like siftdump)
+      return;
    }
 
    Record rec;
