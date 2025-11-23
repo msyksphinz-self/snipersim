@@ -77,16 +77,16 @@ if [ ! -d riscv-tools ]; then
 	# Clone riscv-tools
 	git clone -b sift https://github.com/nus-comparch/riscv-tools.git riscv-tools
 	cd riscv-tools
-	
+
 	# Initialize all submodules EXCEPT riscv-gnu-toolchain to avoid old version issues
 	# riscv-fesvr: Front-end server (deprecated in newer versions, integrated into riscv-isa-sim)
-	git submodule update --init riscv-fesvr riscv-isa-sim riscv-opcodes riscv-openocd riscv-pk riscv-tests
+	git submodule update --init riscv-isa-sim riscv-opcodes riscv-openocd riscv-pk riscv-tests
 else
 	cd riscv-tools
 	git pull
 	# Update other submodules (not riscv-gnu-toolchain yet)
 	# riscv-fesvr: Still needed for this older sift branch
-	git submodule update --init riscv-fesvr riscv-isa-sim riscv-opcodes riscv-openocd riscv-pk riscv-tests
+	git submodule update --init riscv-isa-sim riscv-opcodes riscv-openocd riscv-pk riscv-tests
 fi
 
 # Now handle riscv-gnu-toolchain separately with latest tag (both new and existing cases)
@@ -99,15 +99,25 @@ cd riscv-gnu-toolchain
 git config --local url."https://github.com/".insteadOf git://github.com/
 
 git fetch --tags
-LATEST_TAG=$(git tag --list | grep -E '^[0-9]{4}\.' | sort -V | tail -1)
-if [ -n "$LATEST_TAG" ]; then
-	echo "Checking out riscv-gnu-toolchain tag: $LATEST_TAG"
-	git checkout $LATEST_TAG
+GCC_TAG=2025.11.21
+if [ -n "$GCC_TAG" ]; then
+	echo "Checking out riscv-gnu-toolchain tag: $GCC_TAG"
+	git checkout $GCC_TAG
 	# NOTE: Do NOT recursively init submodules here
 	# riscv-gnu-toolchain will download required components during build time
 fi
 
 cd $LOCAL_ROOT
+
+# 1e) riscv-opcodes-latest (definition of the RISC-V Opcode)
+echo "Setting up riscv-opcodes-latest..."
+cd $SNIPER_ROOT/riscv
+if [ ! -d riscv-opcodes-latest ]; then
+    git clone https://github.com/riscv/riscv-opcodes.git riscv-opcodes-latest
+else
+    cd riscv-opcodes-latest
+    git pull
+fi
 
 echo "####################################################################################"
 
@@ -154,7 +164,7 @@ if [ -f riscv/scripts/generate_riscv_decoder.py ] && [ -f riscv/riscv-opcodes-la
         riscv/riscv-opcodes-latest/arg_lut.csv \
         /dev/stdin > \
         decoder_lib/riscv_decoder_generated.h
-    
+
     if [ $? -eq 0 ]; then
         INST_COUNT=$(grep -c "rv_op_" decoder_lib/riscv_decoder_generated.h | head -1)
         echo "  ✓ Generated decoder with ~${INST_COUNT} instructions"
@@ -188,74 +198,74 @@ if [ $? -ne 0 ]; then
 fi
 echo "####################################################################################"
 
-# 2d) rv8
-#echo "Compiling rv8 simulator..."
-#cd $RV8_HOME
-#make test-build TEST_RV64="ARCH=rv64imafd TARGET=riscv64-unknown-elf"
-#make -j $NPROC
-#echo "####################################################################################"
-
-# 2e) Speckle - to compile and copy SPEC CPU2006 binaries
-echo "Compiling SPEC CPU2006 binaries..."
-cd $SPECKLE_ROOT
-./gen_binaries_sift.sh --compile --copy
-echo "####################################################################################"
-
-
-# 3) Running SPEC binaries to generate SIFT traces
-echo "Running SPEC binaries on Spike simulator to generate SIFT traces..."
-
-# 3a) Spike
-### Eg:3a-i) Using script
-cd $SPECKLE_ROOT
-# run_sift.sh assumes SPEC is already compiled and binaries copied to $SPECKLE_ROOT/riscv-spec-test
-./run_sift.sh --benchmark 462.libquantum # running for a single benchmark
-# ./run_sift.sh --all # running for all benchmarks
-echo "####################################################################################"
-
-
-### Eg:3a-ii) Without script
-# running individual binaries in Spike
-# cd $SPECKLE_ROOT/riscv-spec-test/456.hmmer
-# spike --sift=hmmer-1.sift pk  hmmer --fixed 0 --mean 325 --num 45000 --sd 200 --seed 0 bombesin.hmm
-# echo "####################################################################################"
-
-
-# 3b) rv8
-### Eg:3b-i) Using script
+# # 2d) rv8
+# #echo "Compiling rv8 simulator..."
+# #cd $RV8_HOME
+# #make test-build TEST_RV64="ARCH=rv64imafd TARGET=riscv64-unknown-elf"
+# #make -j $NPROC
+# #echo "####################################################################################"
+#
+# # 2e) Speckle - to compile and copy SPEC CPU2006 binaries
+# echo "Compiling SPEC CPU2006 binaries..."
 # cd $SPECKLE_ROOT
-# Change SIMULATOR=rv8 in run_sift.sh#7
-# run_sift.sh assumes SPEC is already compiled and binaries copied to $SPECKLE_ROOT/riscv-spec-test
+# ./gen_binaries_sift.sh --compile --copy
+# echo "####################################################################################"
+#
+#
+# # 3) Running SPEC binaries to generate SIFT traces
+# echo "Running SPEC binaries on Spike simulator to generate SIFT traces..."
+#
+# # 3a) Spike
+# ### Eg:3a-i) Using script
+# cd $SPECKLE_ROOT
+# # run_sift.sh assumes SPEC is already compiled and binaries copied to $SPECKLE_ROOT/riscv-spec-test
 # ./run_sift.sh --benchmark 462.libquantum # running for a single benchmark
-# ./run_sift.sh --all # running for all benchmarks
+# # ./run_sift.sh --all # running for all benchmarks
 # echo "####################################################################################"
-
-
-### Eg:3b-ii) Without script
-# running individual binaries in rv8
-# cd $SPECKLE_ROOT/riscv-spec-test/462.libquantum
-# $RV8_HOME/build/linux_x86_64/bin/rv-jit --log-sift --log-sift-filename libquantum-1.sift libquantum 33 5
-# echo "####################################################################################"
-
-
-# 4) Running SIFT traces with Sniper
-echo "Running SIFT traces with Sniper..."
-# Running the traces generated by Spike (assuming Eg:3a-i was already executed)
-cd $SPECKLE_ROOT/output/spike/462.libquantum
-$SNIPER_ROOT/run-sniper -criscv --traces=libquantum-1.sift
-echo "####################################################################################"
-
-
-# Running the traces generated by rv8 Simulator (assuming Eg:3b-ii was already executed)
-# cd $SPECKLE_ROOT/output/rv8/462.libquantum
+#
+#
+# ### Eg:3a-ii) Without script
+# # running individual binaries in Spike
+# # cd $SPECKLE_ROOT/riscv-spec-test/456.hmmer
+# # spike --sift=hmmer-1.sift pk  hmmer --fixed 0 --mean 325 --num 45000 --sd 200 --seed 0 bombesin.hmm
+# # echo "####################################################################################"
+#
+#
+# # 3b) rv8
+# ### Eg:3b-i) Using script
+# # cd $SPECKLE_ROOT
+# # Change SIMULATOR=rv8 in run_sift.sh#7
+# # run_sift.sh assumes SPEC is already compiled and binaries copied to $SPECKLE_ROOT/riscv-spec-test
+# # ./run_sift.sh --benchmark 462.libquantum # running for a single benchmark
+# # ./run_sift.sh --all # running for all benchmarks
+# # echo "####################################################################################"
+#
+#
+# ### Eg:3b-ii) Without script
+# # running individual binaries in rv8
+# # cd $SPECKLE_ROOT/riscv-spec-test/462.libquantum
+# # $RV8_HOME/build/linux_x86_64/bin/rv-jit --log-sift --log-sift-filename libquantum-1.sift libquantum 33 5
+# # echo "####################################################################################"
+#
+#
+# # 4) Running SIFT traces with Sniper
+# echo "Running SIFT traces with Sniper..."
+# # Running the traces generated by Spike (assuming Eg:3a-i was already executed)
+# cd $SPECKLE_ROOT/output/spike/462.libquantum
 # $SNIPER_ROOT/run-sniper -criscv --traces=libquantum-1.sift
 # echo "####################################################################################"
-
-echo "export RISCV=$RISCV"
-echo "export PATH=$PATH"
-echo "export RV8_HOME=$RV8_HOME"
-echo "export SNIPER_ROOT=$SNIPER_ROOT"
-echo "export SPEC_DIR=$CPU2006_ROOT"
-echo "export SPECKLE_ROOT=$SPECKLE_ROOT"
-
-echo "####################################################################################"
+#
+#
+# # Running the traces generated by rv8 Simulator (assuming Eg:3b-ii was already executed)
+# # cd $SPECKLE_ROOT/output/rv8/462.libquantum
+# # $SNIPER_ROOT/run-sniper -criscv --traces=libquantum-1.sift
+# # echo "####################################################################################"
+#
+# echo "export RISCV=$RISCV"
+# echo "export PATH=$PATH"
+# echo "export RV8_HOME=$RV8_HOME"
+# echo "export SNIPER_ROOT=$SNIPER_ROOT"
+# echo "export SPEC_DIR=$CPU2006_ROOT"
+# echo "export SPECKLE_ROOT=$SPECKLE_ROOT"
+#
+# echo "####################################################################################"
