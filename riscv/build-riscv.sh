@@ -204,16 +204,16 @@ if [ $? -ne 0 ]; then
 fi
 echo "####################################################################################"
 
-# 2c) riscv-tools (includes Spike)
-echo "Building riscv-tools..."
-cd $LOCAL_ROOT/riscv-tools
-echo "Building RISC-V Tools with $NPROC process(es)"
-./build-sift.sh $NPROC
-if [ $? -ne 0 ]; then
-   echo "Building riscv-tools failed!"
-   exit 1
-fi
-echo "####################################################################################"
+# # 2c) riscv-tools (includes Spike)
+# echo "Building riscv-tools..."
+# cd $LOCAL_ROOT/riscv-tools
+# echo "Building RISC-V Tools with $NPROC process(es)"
+# ./build-sift.sh $NPROC
+# if [ $? -ne 0 ]; then
+#    echo "Building riscv-tools failed!"
+#    exit 1
+# fi
+# echo "####################################################################################"
 
 # # 2d) rv8
 # #echo "Compiling rv8 simulator..."
