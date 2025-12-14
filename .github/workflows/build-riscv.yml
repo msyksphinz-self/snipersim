@@ -4,8 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - master
+      - msyksphinz/riscv
   schedule:
     # Run once per day at 2:00 AM JST (17:00 UTC previous day)
     - cron: '0 17 * * *'
