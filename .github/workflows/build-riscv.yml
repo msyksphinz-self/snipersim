@@ -1,0 +1,50 @@
+name: Build RISC-V Environment
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+  schedule:
+    # Run once per day at 2:00 AM JST (17:00 UTC previous day)
+    - cron: '0 17 * * *'
+
+jobs:
+  build-docker:
+    runs-on: self-hosted
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: |
+        # Build Docker image from repository Dockerfile on the runner server
+        docker build -t sniper-riscv:latest \
+          -f docker/Dockerfile-ubuntu-24.04 .
+
+  build-riscv:
+    runs-on: self-hosted
+    needs: build-docker
+    timeout-minutes: 360  # 6 hours timeout
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Build RISC-V environment
+      run: |
+        docker run --rm \
+          -v ${{ github.workspace }}:/workspace \
+          -w /workspace \
+          -e PIN_ROOT=${PIN_ROOT:-/home/kimura/sniper_tools/pin-3.18-98332-gaebd7b1e6-gcc-linux} \
+          -e CPU2006_ROOT=${CPU2006_ROOT:-/home/kimura/sniper_tools/cpu2006_dummy} \
+          -e SNIPER_ROOT=/workspace \
+          sniper-riscv:latest bash -c "
+            # Get number of CPUs available in the container (use half)
+            NPROC=\$((\$(nproc) / 2))
+            echo \"Using \${NPROC} parallel jobs (half of available CPUs)\"
+            # Run build script
+            bash riscv/build-riscv.sh
+          "
+
