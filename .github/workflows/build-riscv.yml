@@ -19,10 +19,16 @@ jobs:
         WORKSPACE_DIR="${{ github.workspace }}"
         if [ -d "$WORKSPACE_DIR" ]; then
           echo "Cleaning workspace directory: $WORKSPACE_DIR"
-          # Use sudo to remove root-owned files if necessary
-          sudo rm -rf "$WORKSPACE_DIR"/* "$WORKSPACE_DIR"/.[!.]* 2>/dev/null || true
-          # Ensure the directory is owned by the current user
-          sudo chown -R $(whoami):$(whoami) "$WORKSPACE_DIR" 2>/dev/null || true
+          # Try to remove files without sudo first
+          rm -rf "$WORKSPACE_DIR"/* "$WORKSPACE_DIR"/.[!.]* 2>/dev/null || true
+          # If there are permission issues, try with sudo (requires NOPASSWD setup)
+          # Note: This requires /etc/sudoers configuration:
+          # username ALL=(ALL) NOPASSWD: /bin/rm, /bin/chown
+          if [ -n "$(ls -A "$WORKSPACE_DIR" 2>/dev/null)" ]; then
+            echo "Some files remain, attempting with sudo (requires NOPASSWD setup)..."
+            sudo rm -rf "$WORKSPACE_DIR"/* "$WORKSPACE_DIR"/.[!.]* 2>/dev/null || true
+            sudo chown -R $(whoami):$(whoami) "$WORKSPACE_DIR" 2>/dev/null || true
+          fi
         fi
     
     - name: Checkout repository
@@ -45,14 +51,19 @@ jobs:
     - name: Clean workspace
       run: |
         # Clean up workspace directory to avoid permission issues
-        # Remove files that might have been created by root
         WORKSPACE_DIR="${{ github.workspace }}"
         if [ -d "$WORKSPACE_DIR" ]; then
           echo "Cleaning workspace directory: $WORKSPACE_DIR"
-          # Use sudo to remove root-owned files if necessary
-          sudo rm -rf "$WORKSPACE_DIR"/* "$WORKSPACE_DIR"/.[!.]* 2>/dev/null || true
-          # Ensure the directory is owned by the current user
-          sudo chown -R $(whoami):$(whoami) "$WORKSPACE_DIR" 2>/dev/null || true
+          # Try to remove files without sudo first
+          rm -rf "$WORKSPACE_DIR"/* "$WORKSPACE_DIR"/.[!.]* 2>/dev/null || true
+          # If there are permission issues, try with sudo (requires NOPASSWD setup)
+          # Note: This requires /etc/sudoers configuration:
+          # username ALL=(ALL) NOPASSWD: /bin/rm, /bin/chown
+          if [ -n "$(ls -A "$WORKSPACE_DIR" 2>/dev/null)" ]; then
+            echo "Some files remain, attempting with sudo (requires NOPASSWD setup)..."
+            sudo rm -rf "$WORKSPACE_DIR"/* "$WORKSPACE_DIR"/.[!.]* 2>/dev/null || true
+            sudo chown -R $(whoami):$(whoami) "$WORKSPACE_DIR" 2>/dev/null || true
+          fi
         fi
     
     - name: Checkout repository
