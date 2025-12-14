@@ -2,7 +2,7 @@ include ../../common/Makefile.common
 
 SIM_ROOT ?= $(shell readlink -f "$(CURDIR)/../../")
 
-QEMU_HOME ?= /home/kimura/work/bench_trace_env/qemu-10.0.6
+QEMU_HOME ?= $(SIM_ROOT)/qemu-9.2.4
 QEMU_FRONTEND_CFLAGS=-fPIC -fvisibility=hidden $(shell pkg-config --cflags glib-2.0) -std=c++17 -g -O0
 CFLAGS+=$(QEMU_FRONTEND_CFLAGS)
 CPPFLAGS+=-I.. -I../../decoder_lib -I$(QEMU_HOME)/include

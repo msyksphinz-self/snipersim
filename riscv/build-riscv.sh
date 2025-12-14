@@ -121,6 +121,23 @@ fi
 
 echo "####################################################################################"
 
+# 1f) QEMU
+echo "Setting up QEMU..."
+QEMU_VERSION=9.2.4
+QEMU_DIR=$SNIPER_ROOT/qemu-${QEMU_VERSION}
+if [ ! -d "$QEMU_DIR" ]; then
+	cd $SNIPER_ROOT
+	echo "Downloading QEMU ${QEMU_VERSION}..."
+	wget https://download.qemu.org/qemu-${QEMU_VERSION}.tar.xz
+	tar xJf qemu-${QEMU_VERSION}.tar.xz
+	cd $SNIPER_ROOT
+else
+	echo "QEMU ${QEMU_VERSION} already exists at $QEMU_DIR"
+fi
+export QEMU_HOME=$QEMU_DIR
+export PATH=$QEMU_DIR/build:$PATH
+echo "####################################################################################"
+
 # 1c) rv8 simulator (that support sift generation)
 echo "Setting up rv8 simulator..."
 URL=https://github.com/nus-comparch/rv8.git
