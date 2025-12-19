@@ -172,7 +172,10 @@ if [ -f riscv/scripts/generate_riscv_decoder.py ] && [ -f riscv/riscv-opcodes-la
         riscv/riscv-opcodes-latest/extensions/rv_d \
         riscv/riscv-opcodes-latest/extensions/rv64_d \
         riscv/riscv-opcodes-latest/extensions/rv_c \
+        riscv/riscv-opcodes-latest/extensions/rv32_c \
         riscv/riscv-opcodes-latest/extensions/rv64_c \
+        riscv/riscv-opcodes-latest/extensions/rv_c_d \
+        riscv/riscv-opcodes-latest/extensions/rv32_c_f \
         riscv/riscv-opcodes-latest/extensions/rv64_zba \
         riscv/riscv-opcodes-latest/extensions/rv64_zbb \
         riscv/riscv-opcodes-latest/extensions/rv64_zbs \
