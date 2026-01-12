@@ -72,13 +72,15 @@ class QemuFrontend final : public Frontend<QemuFrontend>
          FrontendCallbacks<QemuFrontend>::countInsns(threadid, 1);
       }
 
-      if (m_in_roi && roi_inst_count == m_fast_forward_target) {
+      if (!m_in_roi && roi_inst_count == m_fast_forward_target) {
          std::cout << "[FRONTEND] Detail Mode Start\n";
          FrontendCallbacks<QemuFrontend>::handleMagic (threadid, SIM_CMD_ROI_START, 0, 0);
+         m_in_roi = true;
       }
       if (m_in_roi && roi_inst_count == m_fast_forward_target + m_detailed_target) {
          std::cout << "[FRONTEND] Detail Mode End\n";
          FrontendCallbacks<QemuFrontend>::handleMagic (threadid, SIM_CMD_ROI_END, 0, 0);
+         m_control->setInstrumentationMode(Sift::ModeStop);
          m_control->endROI(threadid);
          m_in_roi = false;
       }
@@ -570,4 +572,3 @@ extern "C" void fini(void)
 }
 
 };
-
