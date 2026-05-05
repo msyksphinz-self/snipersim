@@ -23,15 +23,19 @@ const char* DynamicMicroOpBoomV1::PortTypeString(DynamicMicroOpBoomV1::uop_port_
 
 DynamicMicroOpBoomV1::uop_port_t DynamicMicroOpBoomV1::getPort(const MicroOp *uop)
 {
-      if(instrlist[uop->getInstructionOpcode()].has_fpu || instrlist[uop->getInstructionOpcode()].has_fdiv || instrlist[uop->getInstructionOpcode()].has_mul ) {
-            return DynamicMicroOpBoomV1::UOP_PORT0;
-      } else if(instrlist[uop->getInstructionOpcode()].has_div ) {
-            return DynamicMicroOpBoomV1::UOP_PORT1;
-      } else if(instrlist[uop->getInstructionOpcode()].is_memory) {
-            return DynamicMicroOpBoomV1::UOP_PORT2;
-      } else {
+      unsigned int op = uop->getInstructionOpcode();
+      // opcode 0 (DL_OPCODE_INVALID / synthetic micro-ops) and out-of-range
+      // opcodes have no instrlist[] entry; treat them as generic ALU ops.
+      if (op == 0 || op >= (unsigned int)rv_op_last)
             return DynamicMicroOpBoomV1::UOP_PORT012;
-      }
+      if(instrlist[op].has_fpu || instrlist[op].has_fdiv || instrlist[op].has_mul)
+            return DynamicMicroOpBoomV1::UOP_PORT0;
+      else if(instrlist[op].has_div)
+            return DynamicMicroOpBoomV1::UOP_PORT1;
+      else if(instrlist[op].is_memory)
+            return DynamicMicroOpBoomV1::UOP_PORT2;
+      else
+            return DynamicMicroOpBoomV1::UOP_PORT012;
 }
 
 DynamicMicroOpBoomV1::uop_bypass_t DynamicMicroOpBoomV1::getBypassType(const MicroOp *uop)

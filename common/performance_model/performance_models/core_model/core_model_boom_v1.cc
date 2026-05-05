@@ -51,7 +51,12 @@ CoreModelBoomV1::CoreModelBoomV1()
 unsigned int CoreModelBoomV1::getInstructionLatency(const MicroOp *uop) const
 {
    unsigned int instruction_type = (unsigned int) uop->getInstructionOpcode();
-   LOG_ASSERT_ERROR(instruction_type > 0 && instruction_type < rv_op_last, "Invalid instruction type %d", instruction_type);
+   // opcode 0 (DL_OPCODE_INVALID) is used by synthetic micro-ops such as
+   // m_memaccess_uop, m_serialize_uop, and m_mfence_uop.  Opcodes beyond
+   // rv_op_last are out of the instrlist[] range.  Both cases default to a
+   // 1-cycle latency which is a safe approximation for these overhead ops.
+   if (instruction_type == 0 || instruction_type >= (unsigned int)rv_op_last)
+      return 1;
    return instructionLatencies[instruction_type];
 }
 
