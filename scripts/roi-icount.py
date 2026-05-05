@@ -84,14 +84,21 @@ class RoiIcount:
       sim.control.set_roi(False)
       self.state = 'done'
 
-    if self.state in ('init', 'warmup') and icount >= self.offset + self.init_length + self.warmup_length:
-      print('[ROI-ICOUNT] Icount = %d: beginning ROI' % icount)
-      sim.control.set_roi(True)
-      self.state = 'detailed'
-
+    # Process WARMUP transition before ROI transition so that
+    # set_instrumentation_mode(WARMUP) breaks out of fast-forward batch mode
+    # before set_roi(True) is called (required when warmup_length == 0).
     if self.state == 'init' and icount >= self.offset + self.init_length:
       print('[ROI-ICOUNT] Icount = %d: going to WARMUP' % icount)
       sim.control.set_instrumentation_mode(sim.control.WARMUP)
       self.state = 'warmup'
+      if self.warmup_length == 0:
+        # Defer ROI start to the next periodic callback so the mode switch
+        # takes effect before transitioning to detailed simulation.
+        return
+
+    if self.state in ('init', 'warmup') and icount >= self.offset + self.init_length + self.warmup_length:
+      print('[ROI-ICOUNT] Icount = %d: beginning ROI' % icount)
+      sim.control.set_roi(True)
+      self.state = 'detailed'
 
 sim.util.register(RoiIcount())
