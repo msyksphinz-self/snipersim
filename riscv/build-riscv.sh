@@ -179,7 +179,9 @@ if [ -f riscv/scripts/generate_riscv_decoder.py ] && [ -f riscv/riscv-opcodes-la
         riscv/riscv-opcodes-latest/extensions/rv64_zba \
         riscv/riscv-opcodes-latest/extensions/rv64_zbb \
         riscv/riscv-opcodes-latest/extensions/rv64_zbs \
-        riscv/riscv-opcodes-latest/extensions/rv_v | \
+        riscv/riscv-opcodes-latest/extensions/rv_v \
+        riscv/riscv-opcodes-latest/extensions/rv_zicsr \
+        riscv/riscv-opcodes-latest/extensions/rv_zifencei | \
     python3 riscv/scripts/generate_riscv_decoder.py \
         riscv/riscv-opcodes-latest/arg_lut.csv \
         /dev/stdin > \

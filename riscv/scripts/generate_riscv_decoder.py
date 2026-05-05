@@ -14,6 +14,19 @@ instruction_info = {}
 arg_lut = {}
 instruction_encodings = {}  # Store encoding match/mask for each instruction
 
+# Fixed opcode assignments: these instructions must use specific values to match
+# the instrlist[] indices in riscv_meta.h (core_model_boom_v1.cc).
+# The sequential enum counter skips these values so they remain as reserved.
+FIXED_OPCODES = {
+    'fence.i': 39,
+    'csrrw':   124,
+    'csrrs':   125,
+    'csrrc':   126,
+    'csrrwi':  127,
+    'csrrsi':  128,
+    'csrrci':  129,
+}
+
 def load_arg_lut(arg_lut_file):
     """Load argument lookup table"""
     global arg_lut
@@ -294,12 +307,29 @@ def generate_header_enhanced():
     print()
     
     # Instruction enum
+    # Build opcode map: instructions in FIXED_OPCODES get their fixed value;
+    # others get sequential values, skipping any value reserved by FIXED_OPCODES.
+    reserved = set(FIXED_OPCODES.values())
+    opcode_map = {}  # name -> int opcode value
+    counter = 1
+    for name in instructions:
+        if name in FIXED_OPCODES:
+            opcode_map[name] = FIXED_OPCODES[name]
+        else:
+            while counter in reserved:
+                counter += 1
+            opcode_map[name] = counter
+            counter += 1
+
     print(f"/* Instruction enum - {len(instructions)} instructions */")
+    print("/* Note: fixed opcode values for CSR/fence.i match riscv_meta.h instrlist indices */")
     print("enum rv_op {")
     print("    rv_op_illegal = 0,")
-    for i, name in enumerate(instructions, 1):
+    for name in instructions:
         category = instruction_info[name]['category']
-        print(f"    rv_op_{name.replace('.', '_')} = {i},  /* {category} */")
+        val = opcode_map[name]
+        marker = " /* FIXED - matches riscv_meta.h */" if name in FIXED_OPCODES else ""
+        print(f"    rv_op_{name.replace('.', '_')} = {val},{marker}  /* {category} */")
     print("};")
     print()
     
