@@ -207,6 +207,22 @@ if [ $? -ne 0 ]; then
    echo "Compiling Sniper failed!"
    exit 1
 fi
+
+# 2b-1) Setup python_kit stdlib symlink for embedded Python
+# hooks_py.cc sets config.executable to python_kit/intel64/bin/python, and Python
+# then looks for its stdlib at that path + /python3.12/. Create a symlink to the
+# system Python 3.12 stdlib so the embedded interpreter can initialize correctly.
+echo "Setting up python_kit stdlib symlink..."
+PYTHON_KIT_BIN="${SNIPER_ROOT}/python_kit/intel64/bin/python"
+mkdir -p "${PYTHON_KIT_BIN}"
+PYTHON_VERSION=$(python3 -c "import sys; print(f'python{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || echo "python3.12")
+PYTHON_STDLIB=$(python3 -c "import sysconfig; print(sysconfig.get_path('stdlib'))" 2>/dev/null || echo "/usr/lib/${PYTHON_VERSION}")
+if [ ! -e "${PYTHON_KIT_BIN}/${PYTHON_VERSION}" ]; then
+    ln -s "${PYTHON_STDLIB}" "${PYTHON_KIT_BIN}/${PYTHON_VERSION}"
+    echo "  Linked ${PYTHON_KIT_BIN}/${PYTHON_VERSION} -> ${PYTHON_STDLIB}"
+else
+    echo "  Already exists: ${PYTHON_KIT_BIN}/${PYTHON_VERSION}"
+fi
 echo "####################################################################################"
 
 # # 2c) riscv-tools (includes Spike)
