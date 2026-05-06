@@ -16,6 +16,10 @@ endif
 
 ifeq ($(BUILD_RISCV),0)
 OBJECTS:=$(filter-out riscv%,$(OBJECTS))
+else
+# riscv_decoder.cc requires rv8 headers that are not available.
+# Use riscv_decoder_simple.cc (generated-header based decoder) instead.
+OBJECTS:=$(filter-out riscv_decoder.o,$(OBJECTS))
 endif
 
 ifeq ($(BUILD_ARM),0)

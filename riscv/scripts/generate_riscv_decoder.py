@@ -333,18 +333,29 @@ def generate_header_enhanced():
     print("};")
     print()
     
-    # Instruction names
-    print("/* Instruction name strings */")
+    # Build reverse map: opcode_value -> name (for indexed array output)
+    max_opcode = max(opcode_map.values())
+    # opcode_by_idx[i] = name of instruction with opcode i, or None for gaps
+    opcode_by_idx = [None] * (max_opcode + 1)
+    for name, val in opcode_map.items():
+        opcode_by_idx[val] = name
+
+    # Instruction names (indexed by opcode value)
+    print("/* Instruction name strings - indexed by opcode value (rv_op_*) */")
     print("static const char* rv_inst_name_sym[] = {")
-    print('    "illegal",')
-    for name in instructions:
-        print(f'    "{name}",')
+    print('    "illegal",  /* 0 */')
+    for i in range(1, max_opcode + 1):
+        name = opcode_by_idx[i]
+        if name is not None:
+            print(f'    "{name}",')
+        else:
+            print(f'    "reserved",  /* {i} - gap from FIXED_OPCODES */')
     print("};")
     print()
-    
-    # Classification arrays
-    print("/* Instruction classification arrays */")
-    
+
+    # Classification arrays (indexed by opcode value)
+    print("/* Instruction classification arrays - indexed by opcode value (rv_op_*) */")
+
     classifications = [
         ('is_load', 'Load instructions'),
         ('is_store', 'Store instructions'),
@@ -354,50 +365,70 @@ def generate_header_enhanced():
         ('is_float', 'Floating-point instructions'),
         ('is_vector', 'Vector instructions'),
     ]
-    
+
     for field, comment in classifications:
         print(f"/* {comment} */")
         print(f"static const bool rv_inst_{field}[] = {{")
-        print("    false, /* illegal */")
-        for name in instructions:
-            value = 'true' if instruction_info[name][field] else 'false'
-            print(f"    {value},  /* {name} */")
+        print("    false, /* 0 - illegal */")
+        for i in range(1, max_opcode + 1):
+            name = opcode_by_idx[i]
+            if name is not None:
+                value = 'true' if instruction_info[name][field] else 'false'
+                print(f"    {value},  /* {name} */")
+            else:
+                print(f"    false,  /* {i} - reserved gap */")
         print("};")
         print()
-    
-    # Memory size array
-    print("/* Memory access size (bytes, 0=no memory access) */")
+
+    # Memory size array (indexed by opcode value)
+    print("/* Memory access size (bytes, 0=no memory access) - indexed by opcode value */")
     print("static const uint8_t rv_inst_mem_size[] = {")
-    print("    0, /* illegal */")
-    for name in instructions:
-        mem_size = instruction_info[name]['mem_size']
-        print(f"    {mem_size},  /* {name} */")
+    print("    0, /* 0 - illegal */")
+    for i in range(1, max_opcode + 1):
+        name = opcode_by_idx[i]
+        if name is not None:
+            mem_size = instruction_info[name]['mem_size']
+            print(f"    {mem_size},  /* {name} */")
+        else:
+            print(f"    0,  /* {i} - reserved gap */")
     print("};")
     print()
-    
-    # Operand type arrays
-    print("/* Operand type information */")
+
+    # Operand type arrays (indexed by opcode value)
+    print("/* Operand type information - indexed by opcode value */")
     print("static const bool rv_inst_has_gpr[] = {")
-    print("    false, /* illegal */")
-    for name in instructions:
-        value = 'true' if instruction_info[name]['has_gpr'] else 'false'
-        print(f"    {value},  /* {name} */")
+    print("    false, /* 0 - illegal */")
+    for i in range(1, max_opcode + 1):
+        name = opcode_by_idx[i]
+        if name is not None:
+            value = 'true' if instruction_info[name]['has_gpr'] else 'false'
+            print(f"    {value},  /* {name} */")
+        else:
+            print(f"    false,  /* {i} - reserved gap */")
     print("};")
     print()
-    
+
     print("static const bool rv_inst_has_fpr[] = {")
-    print("    false, /* illegal */")
-    for name in instructions:
-        value = 'true' if instruction_info[name]['has_fpr'] else 'false'
-        print(f"    {value},  /* {name} */")
+    print("    false, /* 0 - illegal */")
+    for i in range(1, max_opcode + 1):
+        name = opcode_by_idx[i]
+        if name is not None:
+            value = 'true' if instruction_info[name]['has_fpr'] else 'false'
+            print(f"    {value},  /* {name} */")
+        else:
+            print(f"    false,  /* {i} - reserved gap */")
     print("};")
     print()
-    
+
     print("static const bool rv_inst_has_vpr[] = {")
-    print("    false, /* illegal */")
-    for name in instructions:
-        value = 'true' if instruction_info[name]['has_vpr'] else 'false'
-        print(f"    {value},  /* {name} */")
+    print("    false, /* 0 - illegal */")
+    for i in range(1, max_opcode + 1):
+        name = opcode_by_idx[i]
+        if name is not None:
+            value = 'true' if instruction_info[name]['has_vpr'] else 'false'
+            print(f"    {value},  /* {name} */")
+        else:
+            print(f"    false,  /* {i} - reserved gap */")
     print("};")
     print()
     

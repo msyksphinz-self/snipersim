@@ -378,10 +378,9 @@ SubsecondTime TraceThread::getCurrentTime() const
 Instruction* TraceThread::decode(Sift::Instruction &inst)
 {
 
-   //printf("PC: %lx Size: %d num_addresses=%d is_branch=%d\n", inst.sinst->addr, inst.sinst->size, inst.num_addresses, inst.is_branch);
    if (m_decoder_cache.count(inst.sinst->addr) == 0)
       m_decoder_cache[inst.sinst->addr] = staticDecode(inst);
-   
+
    const dl::DecodedInst& dec_inst = *(m_decoder_cache[inst.sinst->addr]);
 
    OperandList list;
